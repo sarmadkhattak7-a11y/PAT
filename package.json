@@ -1,0 +1,24 @@
+{
+  "name": "barak-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Barak AgriTech Salam offering platform: working prototype",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"node --watch --no-warnings server/index.js\" \"vite client\"",
+    "build": "vite build client",
+    "start": "node --no-warnings server/index.js",
+    "reset": "node --no-warnings -e \"import('./server/db.js').then(m=>{m.seed();console.log('reseeded')})\"",
+    "test": "node --no-warnings --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.0.7"
+  }
+}
