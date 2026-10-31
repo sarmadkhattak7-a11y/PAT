@@ -1,8 +1,10 @@
 // Stands in for the HTTP server: routes each api() call to the shared route table, in the browser.
-import { ensure, get, persist } from './db.js';
+import { ensure, get, persist, fresh } from './db.js';
 import { dispatch } from '../../../server/routes.js';
 
-ensure(); persist();
+// Saved demo data that cannot be opened (an older version, or damaged) is replaced with a fresh season.
+try { ensure(); } catch (e) { console.warn('Starting a fresh demo:', e.message); fresh(); try { localStorage.removeItem('barak-local-session'); } catch {} ensure(); }
+persist();
 const SKEY = 'barak-local-session';
 let mem = null;
 const sess = { get: () => { try { return localStorage.getItem(SKEY); } catch { return mem; } }, set: (v) => { mem = v; try { v == null ? localStorage.removeItem(SKEY) : localStorage.setItem(SKEY, v); } catch {} } };

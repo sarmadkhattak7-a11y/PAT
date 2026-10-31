@@ -5,14 +5,18 @@ import initSqlJs from 'sql.js/dist/sql-asm.js';
 import { sha256 } from 'js-sha256';
 import { setDriver } from '../../../server/store.js';
 
-const KEY = 'barak-local-db-v1';
+const KEY = 'barak-local-db-v2';
+try { localStorage.removeItem('barak-local-db-v1'); } catch (e) { /* storage blocked */ }
 const SQL = await initSqlJs();
 function load() {
   try { const b64 = localStorage.getItem(KEY); if (b64) return new SQL.Database(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))); } catch (e) { /* storage blocked or corrupt: start fresh */ }
   return new SQL.Database();
 }
-const sqldb = load();
+let sqldb = load();
 sqldb.exec('PRAGMA foreign_keys = ON;');
+
+// Start again with an empty database (used if saved data cannot be opened).
+export function fresh() { sqldb = new SQL.Database(); sqldb.exec('PRAGMA foreign_keys = ON;'); try { localStorage.removeItem(KEY); } catch (e) { /* storage blocked */ } }
 
 export function persist() {
   try {

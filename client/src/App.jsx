@@ -38,7 +38,15 @@ function Shell() {
   const ctx = useMemo(() => ({ ...(state || {}), version, refresh, toast, lang, setLang, ur: lang === 'ur' }), [state, version, lang]);
 
   if (!state) return <div className="app"><Loading /></div>;
-  if (state.error) return <div className="app"><div className="wrap" style={{ padding: 48 }}><p>Cannot reach the Barak server. Is it running?</p></div></div>;
+  if (state.error) return (
+    <div className="app"><div className="wrap stack" style={{ padding: 48, maxWidth: 560 }}>
+      <h1>The demo could not start</h1>
+      {LOCAL ? <>
+        <p className="muted">Data saved in this browser from an earlier visit could not be opened. Resetting clears it and starts a fresh season.</p>
+        <button className="btn primary" style={{ alignSelf: 'flex-start' }} onClick={() => { try { Object.keys(localStorage).filter((k) => k.startsWith('barak-')).forEach((k) => localStorage.removeItem(k)); } catch {} location.reload(); }}>Reset the demo in this browser</button>
+      </> : <p className="muted">The Barak server did not answer. Check that it is running (npm start) and reload.</p>}
+    </div></div>
+  );
 
   let page;
   const m = (re) => route.match(re);

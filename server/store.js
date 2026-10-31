@@ -119,7 +119,10 @@ export function ensure() {
   // An older database (different schema version) is rebuilt from scratch: this is demo data.
   const hasSettings = get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'");
   if (hasSettings && setting('schema') !== SCHEMA_VERSION) {
-    all("SELECT name FROM sqlite_master WHERE type = 'table'").forEach((t) => db.exec(`DROP TABLE IF EXISTS "${t.name}"`));
+    // Foreign keys off while dropping, or dropping a parent table before its children fails.
+    db.exec('PRAGMA foreign_keys = OFF;');
+    all("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").forEach((t) => db.exec(`DROP TABLE IF EXISTS "${t.name}"`));
+    db.exec('PRAGMA foreign_keys = ON;');
   }
   db.exec(SCHEMA);
   if (!get("SELECT 1 AS x FROM users WHERE role = 'ops'")) seed();
