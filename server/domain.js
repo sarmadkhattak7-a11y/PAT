@@ -2,25 +2,36 @@
 // Ported from the design prototype (BarakSeason / BarakMarket / BarakCrop) so the working app quotes the same numbers.
 // Day 0 = 1 Nov 2026. Weeks are day / 7.
 
+// Market inputs from the PAT Pricing Engine, live wheat inputs of 31 Oct 2026:
+//   support: federal indicative price for the 2027 crop, Rs 4,500 (27 Oct 2026); government buying not yet confirmed
+//   ref:     engine's median September price, Rs 4,873, rounded to Rs 4,875
+//   low/high: engine's 25th and 75th percentile September prices (Rs 3,831 and Rs 5,494)
+//   rf:      SBP policy rate 12% (raised 26 Oct 2026)
+// The grower price is fixed at Rs 3,300 for this season: it was offered to growers and is written into the pilot contracts.
 export const PRICING = {
   crop: 'Wheat', season: 'Rabi 2026-27', unitKg: 40, owedMdPerAcre: 20,
-  ref: 4600, support: 4200, stress: 2900, low: 4000, high: 5000,
+  fixedPrice: 3300,
+  ref: 4875, support: 4500, harvestExp: 3785, stress: 2900, low: 3850, high: 5500,
   feeMint: 0.025, fee: 0.035, carry: 125,
-  rf: 0.115, tenor: 0.5, premium: 0.249,
+  rf: 0.12, tenor: 0.5, premium: 0.249,
   wht: { filer: 0.055, nonFiler: 0.11 },
-  minSep: 500, round: 50, costLow: 52000,
+  minSep: 500, round: 50, costLow: 60000,
   guard: { maxDiscount: 0.30, minStress: -0.15 },
+  sources: { support: 'Federal indicative price for the 2027 crop, set 27 Oct 2026; government buying not yet confirmed', ref: 'PAT Pricing Engine, median September price, 31 Oct 2026' },
 };
 
 export const PR = (() => {
   const P = PRICING, h = P.rf * P.tenor + P.premium;
+  // What the published rule gives at today's inputs. The season price is fixed below it, so investors carry less risk.
   const raw = (P.ref * (1 - P.fee) - P.carry) / (1 + h);
-  const price = Math.floor(raw / P.round + 1e-6) * P.round;
+  const rulePrice = Math.floor(raw / P.round + 1e-6) * P.round;
+  const price = P.fixedPrice || rulePrice;
   const netMd = (p) => p * (1 - P.fee) - P.carry;
   const cost = price * (1 + P.feeMint);
-  const discount = 1 - price / P.ref, stressRet = netMd(P.stress) / cost - 1, advance = P.owedMdPerAcre * price;
+  // The grower's alternative is selling at harvest, so their discount is measured against the harvest support price.
+  const discount = 1 - price / P.support, stressRet = netMd(P.stress) / cost - 1, advance = P.owedMdPerAcre * price;
   return {
-    ...P, hurdle: h, raw, price, cost, kg: price / P.unitKg, kgCost: cost / P.unitKg,
+    ...P, hurdle: h, raw, rulePrice, price, cost, kg: price / P.unitKg, kgCost: cost / P.unitKg,
     expRet: netMd(P.ref) / cost - 1, supportRet: netMd(P.support) / cost - 1, discount, stressRet, advance,
     breakeven: Math.ceil((cost + P.carry) / (1 - P.fee) / 5) * 5,
     checks: { discount: discount <= P.guard.maxDiscount, stress: stressRet >= P.guard.minStress, advance: advance >= P.costLow },
@@ -61,7 +72,8 @@ export function dayOfDate(date) { return Math.round((Date.UTC(date.getUTCFullYea
 export function phaseAt(day) { return PHASES.find((p) => day >= p.s && day < p.e) || (day < -31 ? PHASES[0] : PHASES[PHASES.length - 1]); }
 
 // Wheat price path, Rs per 40 kg, by week. Oct 2026 mandi about Rs 4,350; dips toward support at harvest; Rs 4,600 by September.
-const PK = [[-5, 4320], [0, 4350], [10, 4380], [19, 4400], [23, 4200], [30, 4280], [40, 4480], [47, 4600]];
+// Oct 2026 mandi about Rs 4,350; dips at harvest (government buying unconfirmed); rises to the Rs 4,875 September estimate.
+const PK = [[-5, 4320], [0, 4350], [10, 4380], [19, 4420], [23, 4250], [30, 4420], [40, 4700], [47, 4875]];
 export function priceAt(day) {
   const w = day / 7;
   if (w <= PK[0][0]) return PK[0][1];
@@ -69,7 +81,7 @@ export function priceAt(day) {
     const [a, pa] = PK[i - 1], [b, pb] = PK[i];
     return Math.round((pa + (pb - pa) * (w - a) / (b - a) + 25 * Math.sin(w * 1.9)) / 5) * 5;
   }
-  return 4600;
+  return 4875;
 }
 export function mandi(day) {
   const p = priceAt(day), w = day / 7;

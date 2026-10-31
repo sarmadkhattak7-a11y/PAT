@@ -19,7 +19,7 @@ export default function Market() {
   const open = clock.market === 'open' && clock.day < clock.DAY.close;
   const T = data.totals;
   const P = pricing, RS = P.kgCost;
-  const pat = Math.floor(amount / RS), val = (px) => pat * ((px * (1 - P.fee) - P.carry) / 40);
+  const pat = Math.floor(amount / RS), val = (px) => pat * ((px * (1 - P.fee) - P.carry) / 40), valApr = (px) => pat * (px * (1 - P.fee) / 40);
   const bank = amount * (1 + P.rf * 10 / 12);
   let ls = data.listings.filter((l) => filter === 'all' || l.village.includes(filter));
   ls = ls.slice().sort((a, b) => sort === 'room' ? b.room - a.room : sort === 'funded' ? b.paidFrac - a.paidFrac : b.acres - a.acres);
@@ -57,8 +57,10 @@ export default function Market() {
           </label>
           <div><div className="huge">{fmt(pat)} kg</div><div className="small muted">{fmt(pat)} PAT · {(pat / 40).toFixed(1)} maund of Grade 1 wheat · Rs {P.kgCost.toFixed(2)} per kg incl. 2.5% fee</div></div>
           <hr className="rule" />
-          <div className="between small"><span>Expected in September (at Rs {fmt(P.ref)})</span><span><b style={{ fontWeight: 500 }}>{pkr(val(P.ref))}</b> <span className="up">{pct(val(P.ref) / amount - 1)}</span></span></div>
-          <div className="between small muted"><span>Same money at the SBP policy rate, 10 months</span><span>{pkr(bank)}</span></div>
+          <div className="small" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 12, alignItems: 'baseline' }}><span>Sold in April at the Rs {fmt(P.support)} support price<div className="xs faint">about 5 months, no storage</div></span><span style={{ textAlign: 'end', whiteSpace: 'nowrap' }}><b style={{ fontWeight: 500 }}>{pkr(valApr(P.support))}</b> <span className="up">{pct(valApr(P.support) / amount - 1)}</span></span></div>
+          <div className="small" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 12, alignItems: 'baseline' }}><span>Held to September at Rs {fmt(P.ref)}<div className="xs faint">about 10 months, after storage</div></span><span style={{ textAlign: 'end', whiteSpace: 'nowrap' }}><b style={{ fontWeight: 500 }}>{pkr(val(P.ref))}</b> <span className="up">{pct(val(P.ref) / amount - 1)}</span></span></div>
+          <div className="small muted" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 12, alignItems: 'baseline' }}><span>Same money at the SBP policy rate (12%), 10 months</span><span style={{ whiteSpace: 'nowrap' }}>{pkr(bank)}</span></div>
+          <span className="xs faint">Rs {fmt(P.support)} is the federal indicative price for the 2027 crop (27 Oct); government buying is not yet confirmed. Without it, harvest prices could be nearer Rs {fmt(P.harvestExp)} ({pct(valApr(P.harvestExp) / amount - 1)} in April). The September figure is the PAT Pricing Engine's median estimate.</span>
           <details className="small">
             <summary style={{ cursor: 'pointer', color: 'var(--accent)' }}>What if prices move?</summary>
             <table className="tbl" style={{ marginTop: 8 }}><tbody>
@@ -165,14 +167,14 @@ function PriceRule({ P }) {
   return (
     <section className="card stack">
       <h2>How the price is set</h2>
-      <p className="muted">One published rule for every crop and season. Growers are paid Rs {fmt(P.price)} per 40 kg; investors pay Rs {fmt(P.cost, 1)} including Barak's 2.5% fee.</p>
+      <p className="muted">Growers are paid Rs {fmt(P.price)} per 40 kg for this season, fixed when the offer went out and written into the contracts. Investors pay Rs {fmt(P.cost, 1)} including Barak's 2.5% fee. Each season the price comes from one published rule; at today's market inputs the rule gives Rs {fmt(P.rulePrice)}, so the fixed price sits below it and leaves investors more room.</p>
       <div className="grid g3">
         <div className="card flat"><span className="small muted">Hurdle = SBP rate × tenor + season risk premium</span><b style={{ fontWeight: 500 }}>{(P.rf * 100).toFixed(1)}% × {P.tenor} + {(P.premium * 100).toFixed(1)}% = {(P.hurdle * 100).toFixed(1)}%</b></div>
-        <div className="card flat"><span className="small muted">Price = (reference × (1 − fee) − carry) ÷ (1 + hurdle)</span><b style={{ fontWeight: 500 }}>({fmt(P.ref)} × 0.965 − {P.carry}) ÷ {(1 + P.hurdle).toFixed(4)} = {fmt(P.raw, 0)} → Rs {fmt(P.price)}</b></div>
-        <div className="card flat"><span className="small muted">Guardrails checked before the season opens</span>
-          <span className="small">{P.checks.discount ? '✓' : '✗'} Grower discount {Math.round(P.discount * 100)}% ≤ 30%</span>
-          <span className="small">{P.checks.stress ? '✓' : '✗'} Stress result {Math.round(P.stressRet * 100)}% ≥ −15%</span>
-          <span className="small">{P.checks.advance ? '✓' : '✗'} Advance {rs(P.advance)}/acre ≥ cost of production</span></div>
+        <div className="card flat"><span className="small muted">Rule price = (September estimate × (1 − fee) − storage) ÷ (1 + hurdle)</span><b style={{ fontWeight: 500 }}>({fmt(P.ref)} × 0.965 − {P.carry}) ÷ {(1 + P.hurdle).toFixed(4)} = {fmt(P.raw, 0)} → Rs {fmt(P.rulePrice)}</b><span className="xs faint">September estimate: PAT Pricing Engine median, 31 Oct 2026</span></div>
+        <div className="card flat"><span className="small muted">Checks on the Rs {fmt(P.price)} price</span>
+          <span className="small">{P.checks.discount ? '✓' : '✗'} Grower price {Math.round(P.discount * 100)}% under the Rs {fmt(P.support)} support price (limit 30%)</span>
+          <span className="small">{P.checks.stress ? '✓' : '✗'} Investor result in a 2024-style crash {Math.round(P.stressRet * 100)}% (limit −15%)</span>
+          <span className="small">{P.checks.advance ? '✓' : '✗'} Advance {rs(P.advance)} an acre covers the cost of production (Rs {fmt(P.costLow)})</span></div>
       </div>
     </section>
   );

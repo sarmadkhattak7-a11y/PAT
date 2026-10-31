@@ -140,7 +140,7 @@ function KisanBar({ route, user }) {
 
 function Ticker({ clock }) {
   const p = clock.prices, chg = clock.priceHist.length > 1 ? p.pmex - clock.priceHist[clock.priceHist.length - 2] : 0;
-  const items = [['PMEX', p.pmex, chg], ['Sahiwal mandi', p.sahiwal], ['Okara mandi', p.okara], ['Govt support (expected)', p.support]];
+  const items = [['PMEX', p.pmex, chg], ['Sahiwal mandi', p.sahiwal], ['Okara mandi', p.okara], ['Govt indicative price', p.support]];
   return (
     <div className="ticker en" dir="ltr">
       <div className="wrap">
