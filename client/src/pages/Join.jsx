@@ -46,7 +46,7 @@ export default function Join() {
           {[[t('Cash when you need it', 'موسم کے لیے نقد رقم'), t('Paid in full by 10 Nov, before you sow: for seed, DAP and diesel.', '10 نومبر تک پوری رقم، بوائی سے پہلے: بیج، ڈی اے پی اور ڈیزل کے لیے۔')],
             [t('Your price is fixed before you sow', 'قیمت پہلے سے طے'), t(`Rs ${fmt(pricing.price)} a maund, the same for every field. No haggling at the mandi.`, `Rs ${fmt(pricing.price)} فی من، ہر کھیت یکساں۔ منڈی میں بھاؤ تاؤ نہیں۔`)],
             [t('Not a loan', 'یہ قرض نہیں'), t('It is a sale paid in advance. No interest, and you repay in wheat, not cash.', 'پیشگی فروخت ہے۔ سود نہیں، ادائیگی گندم میں۔')],
-            [t('You sell only part of your crop', 'فصل کا صرف حصہ'), t('20 maund an acre. Whatever you grow above that is yours, at April prices.', '20 من فی ایکڑ۔ اس سے زیادہ پیداوار آپ کی، اپریل کی قیمت پر۔')],
+            [t('Grow more, keep more', 'زیادہ اگائیں، زیادہ رکھیں'), t('20 maund an acre. Whatever you grow above that is yours, at April prices.', '20 من فی ایکڑ۔ اس سے زیادہ پیداوار آپ کی، اپریل کی قیمت پر۔')],
             [t('Help through the season', 'پورے سیزن مدد'), t('Satellite checks on your field, a field officer, and a voice message before any heat wave.', 'سیٹلائٹ سے کھیت کی نگرانی، فیلڈ افسر، اور گرمی سے پہلے صوتی پیغام۔')],
             [t('Delivery made easy', 'آسان ترسیل'), t('One certified warehouse near your fields. Barak pays for the trolley.', 'قریب ایک منظور شدہ گودام۔ ٹرالی کا کرایہ بارک دے گا۔')]].map(([h, b]) => <div key={h} className="card"><b style={{ fontWeight: 500 }}>{h}</b><span className="small muted">{b}</span></div>)}
         </div>
