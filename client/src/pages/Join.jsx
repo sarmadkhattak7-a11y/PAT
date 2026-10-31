@@ -44,7 +44,7 @@ export default function Join() {
         <h2>{t('Why growers join', 'کاشتکار کیوں شامل ہوتے ہیں')}</h2>
         <div className="grid g3">
           {[[t('Cash when you need it', 'موسم کے لیے نقد رقم'), t('Paid in full by 10 Nov, before you sow: for seed, DAP and diesel.', '10 نومبر تک پوری رقم، بوائی سے پہلے: بیج، ڈی اے پی اور ڈیزل کے لیے۔')],
-            [t('Your price is fixed before you sow', 'قیمت پہلے سے طے'), t(`Rs ${fmt(pricing.price)} a maund, the same for every field. No haggling at the mandi.`, `Rs ${fmt(pricing.price)} فی من، ہر کھیت یکساں۔ منڈی میں بھاؤ تاؤ نہیں۔`)],
+            [t('Your price is fixed before you sow', 'قیمت پہلے سے طے'), t(`Rs ${fmt(pricing.price)} a maund for this season, the same for every field. No haggling at the mandi.`, `اس سیزن کے لیے Rs ${fmt(pricing.price)} فی من، ہر کھیت یکساں۔ منڈی میں بھاؤ تاؤ نہیں۔`)],
             [t('Not a loan', 'یہ قرض نہیں'), t('It is a sale paid in advance. No interest, and you repay in wheat, not cash.', 'پیشگی فروخت ہے۔ سود نہیں، ادائیگی گندم میں۔')],
             [t('Grow more, keep more', 'زیادہ اگائیں، زیادہ رکھیں'), t('20 maund an acre. Whatever you grow above that is yours, at April prices.', '20 من فی ایکڑ۔ اس سے زیادہ پیداوار آپ کی، اپریل کی قیمت پر۔')],
             [t('Help through the season', 'پورے سیزن مدد'), t('Satellite checks on your field, a field officer, and a voice message before any heat wave.', 'سیٹلائٹ سے کھیت کی نگرانی، فیلڈ افسر، اور گرمی سے پہلے صوتی پیغام۔')],
