@@ -75,15 +75,6 @@ export default function Market() {
         </section>
       </section>
 
-      <section className="stack">
-        <h2>Before you start</h2>
-        <div className="grid g3">
-          <div className="card"><b style={{ fontWeight: 500 }}>You can lose money</b><span className="small muted">If wheat sells below Rs {fmt(P.breakeven)} per 40 kg, you get back less than you put in. In a 2024-style crash (Rs {fmt(P.stress)}) you would lose about {Math.abs(Math.round(P.stressRet * 100))}%.</span></div>
-          <div className="card"><b style={{ fontWeight: 500 }}>Your money is locked until April</b><span className="small muted">PAT cannot move until the wheat is in the warehouse. Only put in what you will not need. Three questions set your season limit.</span></div>
-          <div className="card"><b style={{ fontWeight: 500 }}>Protected if a field fails to raise</b><span className="small muted">Money waits in escrow. A field under 80% paid by {clock.dates.close} does not go ahead and you are refunded by {clock.dates.refund}.</span></div>
-        </div>
-      </section>
-
       {data.close && <CloseBoard rows={data.close} clock={clock} />}
 
       <section className="stack">
@@ -110,6 +101,16 @@ export default function Market() {
         </div>
         <div className="grid g3">{ls.map((l) => <FieldCard key={l.id} l={l} open={open} />)}</div>
         <p className="xs faint">Bar: dark green is paid, light green is reserved and awaiting payment, amber is yours. The tick is the 80% line a field must reach to go ahead.</p>
+      </section>
+
+      <section className="stack">
+        <h2>Good to know</h2>
+        <div className="grid g3">
+          <div className="card"><b style={{ fontWeight: 500 }}>Wheat prices go up and down</b><span className="small muted">What you get back depends on the wheat price when it is sold. If prices are low that month, as they were in 2024, you could get back less than you put in.</span></div>
+          <div className="card"><b style={{ fontWeight: 500 }}>Use money you can leave until April</b><span className="small muted">You can change your mind until {clock.dates.withdrawBy}. After that your money stays in the wheat until it is in the warehouse.</span></div>
+          <div className="card"><b style={{ fontWeight: 500 }}>If a field doesn't fill, you get your money back</b><span className="small muted">Your money waits at the bank. A field that is not 80% paid by {clock.dates.close} does not go ahead, and you are refunded by {clock.dates.refund}.</span></div>
+        </div>
+        <span className="xs faint">The full numbers, including the break-even price and a crash example, are in the key facts you see before you pay.</span>
       </section>
 
       <section className="card stack">
