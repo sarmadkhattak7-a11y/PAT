@@ -39,7 +39,7 @@ export const K = {
   HOLD_DAYS: 1,                      // a reservation is held for 24 hours
 };
 
-export const DAY = { open: -31, close: 4, decide: 5, refund: 6, mint: 9, cashBy: 9, sowBy: 19, electBy: 134, deliverBy: 180, aprSale: 182, settle: 308 };
+export const DAY = { open: -31, withdrawBy: 2, close: 4, decide: 5, refund: 6, mint: 9, cashBy: 9, sowBy: 19, electBy: 134, deliverBy: 180, aprSale: 182, settle: 308 };
 
 export const PHASES = [
   { k: 'market', s: -31, e: 4, en: 'Raising funds', ur: 'سرمایہ کاری' },

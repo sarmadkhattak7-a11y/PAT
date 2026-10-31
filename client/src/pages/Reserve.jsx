@@ -9,8 +9,8 @@ export default function Reserve() {
   const spec = { kind: qs.get('kind') || 'pool', pool: qs.get('pool') || 'starter', field: qs.get('field'), amount: Number(qs.get('amount')) || 100000 };
   const [order, setOrder] = useState(null);
   const kycDone = user && user.cnicOk && user.bankOk && user.limit != null;
-  const step = !user ? 0 : user.role !== 'investor' ? -1 : !kycDone ? 1 : !order ? 2 : order.status === 'paid' ? 4 : 3;
-  const labels = ['Account', 'Verify', 'Confirm', 'Pay', 'Done'];
+  const step = !user ? 0 : user.role !== 'investor' ? -1 : !kycDone ? 1 : !user.acked ? 2 : !order ? 3 : order.status === 'paid' ? 5 : 4;
+  const labels = ['Account', 'Verify', 'Key facts', 'Confirm', 'Pay', 'Done'];
   return (
     <div className="wrap" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: 720 }}>
       <div className="stack">
@@ -20,13 +20,14 @@ export default function Reserve() {
           {step === -1 && <p>Reservations are for investor accounts. You are signed in as {user.role}.</p>}
           {step === 0 && <LoginForm title="Create your investor account" />}
           {step === 1 && <Kyc user={user} />}
-          {step === 2 && <Confirm spec={spec} user={user} onReserved={setOrder} />}
-          {step === 3 && <Pay order={order} onPaid={setOrder} />}
-          {step === 4 && (
+          {step === 2 && <KeyFacts />}
+          {step === 3 && <Confirm spec={spec} user={user} onReserved={setOrder} />}
+          {step === 4 && <Pay order={order} onPaid={setOrder} />}
+          {step === 5 && (
             <div className="stack">
               <div className="kicker">Payment received</div>
               <h2>{pkr(order.amount)} is in escrow</h2>
-              <p className="muted">Reference {order.pay_ref}. Your place is confirmed. On {clock.dates.close} the market closes; fields at 80% or more go ahead and growers are paid on {clock.dates.mint}, when your PAT are minted. If a field does not go ahead, that part is refunded by {clock.dates.refund}.</p>
+              <p className="muted">Reference {order.pay_ref}. Your place is confirmed. You can still withdraw for a full refund until {clock.dates.withdrawBy}. On {clock.dates.close} the market closes; fields at 80% or more go ahead, growers sign their Salam contracts and are paid on signing, and your PAT are minted then. If a field does not go ahead, that part is refunded by {clock.dates.refund}.</p>
               <div className="row"><button className="btn primary" onClick={() => go('/portfolio')}>See my wheat</button><button className="btn" onClick={() => go('/')}>Back to the marketplace</button></div>
             </div>
           )}
@@ -71,6 +72,38 @@ function Kyc({ user }) {
         </form>
       )}
       <Err e={a.error} />
+    </div>
+  );
+}
+
+// Key facts statement: one page, plain words, before any money moves. Modelled on the key-information documents
+// regulated crowdfunding platforms must show, with the Shariah structure stated plainly.
+function KeyFacts() {
+  const { pricing: P, clock } = useApp();
+  const a = useAction();
+  const [t, setT] = useState({ kfs: false, shariah: false, risk: false });
+  const R = (k, v) => <tr><td className="muted" style={{ width: '40%' }}>{k}</td><td>{v}</td></tr>;
+  return (
+    <div className="stack">
+      <div className="kicker">Key facts · Rabi 2026-27 wheat Salam</div>
+      <h2>Read this before you buy</h2>
+      <table className="tbl small"><tbody>
+        {R('What you buy', `Grade 1 wheat, bought in advance under Salam. 1 PAT = 1 kg. You own the wheat once it is delivered to the certified warehouse.`)}
+        {R('Price', `Rs ${fmt(P.price)} a maund (40 kg) to the grower, paid in full when the contract is signed.`)}
+        {R('Barak fees', `2.5% at purchase (in the Rs ${P.kgCost.toFixed(2)} per kg you pay). 3.5% of sale proceeds when sold. Storage Rs ${P.carry} a maund if you hold to September.`)}
+        {R('When you get money back', `April (at harvest) or September (after storage), your choice by ${clock.dates.electBy}. After delivery you can also sell early at that day's price.`)}
+        {R('Lock-up', `From ${clock.dates.close} until the wheat is delivered in April. Salam wheat cannot be resold before delivery.`)}
+        {R('Change your mind', `Cancel an unpaid reservation any time. Withdraw a paid order for a full refund until two days before the close.`)}
+        {R('If a field does not raise 80%', `No contract is formed; your money is refunded in full by ${clock.dates.refund}.`)}
+        {R('If wheat is not delivered', `The grower delivers later (up to 30 days) or refunds the price with no profit added; Barak returns its fee on that part.`)}
+        {R('Main risk', `Wheat prices. Below Rs ${fmt(P.breakeven)} per 40 kg you get back less than you paid. A 2024-style crash (Rs ${fmt(P.stress)}) would mean a loss of about ${Math.abs(Math.round(P.stressRet * 100))}%.`)}
+        {R('Not covered', 'This is not a bank deposit and is not guaranteed by Barak, the bank or the government. Crop insurance (takaful) is not in place this season.')}
+      </tbody></table>
+      {[['kfs', 'I have read the key facts and the Salam and agency terms.'], ['shariah', 'I understand this is a Salam purchase through Barak as my agent, not a loan, and no interest is involved.'], ['risk', 'I understand I can lose money and my money is locked until the wheat is delivered.']].map(([k, l]) => (
+        <label key={k} className="row small" style={{ gap: 10, alignItems: 'flex-start', minHeight: 32 }}><input type="checkbox" checked={t[k]} onChange={(e) => setT({ ...t, [k]: e.target.checked })} style={{ marginTop: 3 }} /> {l}</label>
+      ))}
+      <Err e={a.error} />
+      <button className="btn primary" disabled={a.busy || !(t.kfs && t.shariah && t.risk)} onClick={() => a.run(() => api('/api/kyc/acknowledge', t))}>Continue</button>
     </div>
   );
 }

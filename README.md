@@ -1,5 +1,13 @@
 # Barak AgriTech · Salam offering platform (working prototype)
 
+Three products on one backend:
+
+- **Barak Invest** (`/`): marketplace, reservations, key facts, portfolio, inbox, account. Investors only see their own token records.
+- **Barak Kisan** (`/grower`, `/join`): phone-first, Urdu-first grower app: sign the Salam contract, confirm payment, report sowing, field advice, delivery slots, surplus offers, grower record.
+- **Barak Control** (`/control`): staff console: exceptions, contracts, the Rabi 2026-27 pilot desk, crop monitor, token ledger, grower pipeline, escrow reconciliation, audit log.
+
+The Rabi 2026-27 pilot (Wattoo Agri Farming → Kashif Shabbir, 8,000 maunds at Rs 3,300) runs as a Barak Direct contract from the close to settlement. See `docs/JOURNEY-REVIEW.md` for the farmer and investor journey review behind this build.
+
 A working version of the "Barak AgriTech Prototype v3" design. Every action is real server-side state (SQLite), not a simulation slider: investors sign up, verify, reserve and pay into escrow; Ops closes the market, forms contracts, releases advances and mints PAT; growers decide on smaller contracts, book delivery and report problems; the warehouse intake unlocks tokens; sales burn them and pay holders.
 
 ## Run it
@@ -40,7 +48,7 @@ Sign-in is by phone and one-time code. No SMS gateway is connected, so the code 
 | Growers | 0301 1000141 to 0301 1000152 (Aslam is 141, Khalid is 150) |
 | Investor | any other mobile number creates a new account |
 
-The **Sandbox** button (bottom right) signs in as each role and, for Ops, moves the season clock. The clock starts on today's date; Ops can jump it to the close, payment day, growing season, April delivery and September settlement. "Reset demo data" reseeds everything.
+The **Sandbox** button (bottom right) signs in as any persona (visitor, new investor, growers Aslam, Khalid and Bashir, pilot buyer Kashif Shabbir, pilot grower Asim Wattoo, Ops) and moves the season date. With "Run Barak's steps" ticked, moving the date also does what Ops would do on the way (close, decisions, field-officer signatures, payments, deliveries, shortfall settlement, sales). The clock starts on today's date; Ops can jump it to the close, payment day, growing season, April delivery and September settlement. "Reset demo data" reseeds everything.
 
 ## A season, step by step
 

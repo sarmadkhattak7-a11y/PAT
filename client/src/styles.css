@@ -216,3 +216,38 @@ table.tbl tr.click:hover td { background: color-mix(in srgb, var(--accent) 5%, t
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 footer.foot { margin-top: auto; border-top: 1px solid var(--divider); padding: 20px 0 80px; font-size: 13px; color: var(--muted); }
 .split > *, .grid > * { min-width: 0; }
+
+/* bottom navigation (phones) */
+.bottomnav { display: none; }
+@media (max-width: 720px) {
+  .bottomnav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--divider); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottomnav a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; min-height: 56px; font-size: 12px; color: var(--muted); text-decoration: none; position: relative; }
+  .bottomnav a .ic { font-size: 18px; line-height: 1; }
+  .bottomnav a.on { color: var(--accent); font-weight: 500; }
+  .bottomnav .badge { position: absolute; top: 4px; left: calc(50% + 6px); background: var(--risk-fg); color: #fff; border-radius: 999px; font-size: 11px; min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 4px; font-weight: 600; }
+  .hide-sm { display: none !important; }
+  .app-invest main, .app-kisan main { padding-bottom: 64px; }
+  .dock { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+}
+.dock-h { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; margin-top: 4px; }
+.dock .panel { max-height: 80vh; overflow-y: auto; }
+
+/* Barak Control */
+.ctl { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+.ctl-side { border-inline-end: 1px solid var(--divider); padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.ctl-side a { padding: 9px 12px; border-radius: var(--radius); color: var(--text-2); text-decoration: none; font-size: 14px; display: flex; justify-content: space-between; }
+.ctl-side a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); }
+.ctl-side a.on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.ctl-side .badge { background: var(--risk-bg); color: var(--risk-fg); border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 20px; }
+.ctl-main { padding: 24px 28px 96px; min-width: 0; }
+@media (max-width: 900px) { .ctl { grid-template-columns: minmax(0, 1fr); } .ctl-side { position: static; height: auto; flex-direction: row; overflow-x: auto; border-inline-end: 0; border-bottom: 1px solid var(--divider); } .ctl-side a { white-space: nowrap; } .ctl-side .brand-wrap { display: none; } .ctl-main { padding: 16px 16px 96px; } }
+.tl { display: flex; flex-direction: column; }
+.tl .it { display: grid; grid-template-columns: 96px 14px minmax(0, 1fr); gap: 10px; padding: 8px 0; }
+.tl .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-top: 6px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.tl .dot.watch { background: var(--watch-fg); } .tl .dot.money { background: oklch(0.6 0.12 240); } .tl .dot.report { background: var(--muted); } .tl .dot.ok { background: var(--ok-fg); }
+.check { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
+.check .b { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--line); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
+.check .b.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--divider); }
+.tabs button { border: 0; background: transparent; padding: 10px 14px; font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; min-height: 44px; }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }

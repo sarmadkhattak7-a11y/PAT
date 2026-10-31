@@ -12,14 +12,16 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY, role TEXT NOT NULL, phone TEXT UNIQUE, name TEXT, name_ur TEXT,
   cnic TEXT, cnic_ok INTEGER DEFAULT 0, iban TEXT, bank_ok INTEGER DEFAULT 0,
   suitability TEXT, season_limit INTEGER, filer INTEGER DEFAULT 1, bot INTEGER DEFAULT 0,
-  lang TEXT DEFAULT 'en', created_day INTEGER);
+  lang TEXT DEFAULT 'en', created_day INTEGER, segment TEXT DEFAULT 'retail', prefs TEXT, ack_day INTEGER);
 CREATE TABLE IF NOT EXISTS otps (phone TEXT PRIMARY KEY, code TEXT, expires INTEGER);
 CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, created INTEGER);
 CREATE TABLE IF NOT EXISTS fields (
   id TEXT PRIMARY KEY, idx INTEGER, grower_id INTEGER REFERENCES users(id), village TEXT,
   acres_listed REAL, acres_contracted REAL, grade TEXT, yield_offset REAL, crop_event TEXT, harvest_week REAL,
   sim_frac REAL, status TEXT DEFAULT 'listed', offer_acres REAL, decision TEXT, decision_note TEXT,
-  delivery_day TEXT, photo INTEGER, water TEXT, history TEXT);
+  delivery_day TEXT, photo INTEGER, water TEXT, history TEXT,
+  signed_day INTEGER, sign_method TEXT, paid_day INTEGER, receipt_day INTEGER, payout_method TEXT, payout_account TEXT,
+  sown_day INTEGER, harvest_notice TEXT, extension_until INTEGER, shortfall_kg REAL DEFAULT 0, resolution TEXT);
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id), kind TEXT, pool TEXT, amount REAL,
   status TEXT, reserved_day INTEGER, reserved_at INTEGER, paid_day INTEGER, method TEXT, pay_ref TEXT);
@@ -32,7 +34,8 @@ CREATE TABLE IF NOT EXISTS tokens (
   seq INTEGER PRIMARY KEY, type TEXT, field_id TEXT, from_user INTEGER, to_user INTEGER, pat INTEGER,
   day INTEGER, memo TEXT, prev_hash TEXT, hash TEXT);
 CREATE TABLE IF NOT EXISTS deliveries (
-  field_id TEXT PRIMARY KEY, kg REAL, moisture REAL, grade TEXT, ewr TEXT, day INTEGER);
+  id INTEGER PRIMARY KEY, field_id TEXT, kg REAL, moisture REAL, grade TEXT, ewr TEXT, day INTEGER,
+  vehicle TEXT, slip TEXT, bags INTEGER, foreign_matter REAL);
 CREATE TABLE IF NOT EXISTS elections (user_id INTEGER PRIMARY KEY, win TEXT, filer INTEGER, day INTEGER);
 CREATE TABLE IF NOT EXISTS payouts (
   id INTEGER PRIMARY KEY, user_id INTEGER, win TEXT, pat INTEGER, price REAL, gross REAL, fee REAL, storage REAL, tax REAL, net REAL, day INTEGER);
@@ -41,7 +44,14 @@ CREATE TABLE IF NOT EXISTS reports (
 CREATE TABLE IF NOT EXISTS registrations (
   id INTEGER PRIMARY KEY, name TEXT, phone TEXT, cnic TEXT, village TEXT, acres REAL, yield REAL, status TEXT DEFAULT 'new', day INTEGER);
 CREATE TABLE IF NOT EXISTS visits (id INTEGER PRIMARY KEY, field_id TEXT, day INTEGER, note TEXT, status TEXT DEFAULT 'scheduled');
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY, user_id INTEGER, day INTEGER, kind TEXT, title TEXT, body TEXT, title_ur TEXT, body_ur TEXT, channel TEXT, read INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY, day INTEGER, ts INTEGER, user_id INTEGER, actor TEXT, role TEXT, action TEXT, detail TEXT);
+CREATE TABLE IF NOT EXISTS tasks (field_id TEXT, key TEXT, day INTEGER, PRIMARY KEY (field_id, key));
+CREATE TABLE IF NOT EXISTS surplus (id INTEGER PRIMARY KEY, field_id TEXT, md REAL, price REAL, status TEXT DEFAULT 'offered', day INTEGER, decided_day INTEGER);
+CREATE TABLE IF NOT EXISTS pilot (key TEXT PRIMARY KEY, value TEXT, day INTEGER);
 `;
+export const SCHEMA_VERSION = 2;
 
 const GROWERS = [
   ['BRK-0141', 'Muhammad Aslam', 'محمد اسلم', 'Chak 45/5L, Sahiwal', 12, 0.5, null, null, 0.86, 'Canal + tubewell'],
@@ -74,7 +84,7 @@ export const setSetting = (k, v) => run('INSERT INTO settings (key, value) VALUE
 export function today() { return dayOfDate(new Date()) + (setting('clock_offset', 0) || 0); }
 
 export function seed() {
-  const tables = ['visits', 'registrations', 'reports', 'payouts', 'elections', 'deliveries', 'tokens', 'cash', 'allocations', 'orders', 'fields', 'sessions', 'otps', 'users', 'settings'];
+  const tables = ['pilot', 'surplus', 'tasks', 'audit', 'notifications', 'visits', 'registrations', 'reports', 'payouts', 'elections', 'deliveries', 'tokens', 'cash', 'allocations', 'orders', 'fields', 'sessions', 'otps', 'users', 'settings'];
   db.exec(SCHEMA);
   tx(() => {
     tables.forEach((t) => db.exec(`DELETE FROM ${t}`));
@@ -84,24 +94,41 @@ export function seed() {
     setSetting('market', 'open');
     setSetting('thresholds', { watch: 1.3, risk: 1.1, moist: 0.04, below: 0.08 });
     setSetting('seq', { order: 1040, pay: 26410, ewr: 2700 });
+    setSetting('schema', SCHEMA_VERSION);
     run("INSERT INTO users (role, phone, name, created_day) VALUES ('ops', '03000000001', 'Barak Ops desk', -60)");
     run("INSERT INTO users (role, phone, name, created_day, cnic_ok, bank_ok) VALUES ('treasury', 'treasury', 'Barak treasury', -60, 1, 1)");
     GROWERS.forEach((g, i) => {
       const phone = '0301' + String(1000141 + i);
       const u = run("INSERT INTO users (role, phone, name, name_ur, lang, cnic_ok, bank_ok, created_day) VALUES ('grower', ?, ?, ?, 'ur', 1, 1, -75)", phone, g[1], g[2]);
+      const acct = i % 3 === 0 ? ['JazzCash', '0301-•••' + String(1000141 + i).slice(-4)] : ['Bank', ['HBL', 'MCB', 'Bank Alfalah', 'UBL'][i % 4] + ' ••••' + (4100 + i * 37)];
       const b = 38 + g[5];
       const hist = [b - 2.5 + ((i * 7) % 3) * 0.5, b - 1 + ((i * 5) % 2), b + 0.5].map((x) => Math.round(x * 2) / 2);
       run(`INSERT INTO fields (id, idx, grower_id, village, acres_listed, acres_contracted, grade, yield_offset, crop_event, harvest_week, sim_frac, photo, water, history)
            VALUES (?, ?, ?, ?, ?, ?, 'A', ?, ?, ?, ?, ?, ?, ?)`,
         g[0], i, Number(u.lastInsertRowid), g[3], g[4], g[4], g[5], g[6], i === 0 ? 23 : 21 + (i % 4), g[8], (i % 5) + 1, g[9], JSON.stringify(hist));
+      run('UPDATE fields SET payout_method = ?, payout_account = ? WHERE id = ?', acct[0], acct[1], g[0]);
     });
-    BOT_NAMES.forEach((n, i) => run("INSERT INTO users (role, phone, name, bot, cnic_ok, bank_ok, season_limit, created_day) VALUES ('investor', ?, ?, 1, 1, 1, ?, -40)", 'bot' + i, n, K.LIMIT));
+    BOT_NAMES.forEach((n, i) => run("INSERT INTO users (role, phone, name, bot, cnic_ok, bank_ok, season_limit, created_day, ack_day) VALUES ('investor', ?, ?, 1, 1, 1, ?, -40, -40)", 'bot' + i, n, K.LIMIT));
+    // Rabi 2026-27 pilot (Barak Direct): one buyer, one corporate grower, terms from the Master Salam and Wakalah drafts.
+    run("INSERT INTO users (role, phone, name, segment, cnic_ok, bank_ok, created_day, ack_day) VALUES ('investor', '03001110001', 'Kashif Shabbir', 'direct', 1, 1, -12, -10)");
+    run("INSERT INTO users (role, phone, name, name_ur, segment, lang, cnic_ok, bank_ok, created_day) VALUES ('grower', '03001110002', 'Asim Wattoo', 'عاصم وٹو', 'direct', 'en', 1, 1, -30)");
   });
 }
 
 export function ensure() {
+  // An older database (different schema version) is rebuilt from scratch: this is demo data.
+  const hasSettings = get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'");
+  if (hasSettings && setting('schema') !== SCHEMA_VERSION) {
+    all("SELECT name FROM sqlite_master WHERE type = 'table'").forEach((t) => db.exec(`DROP TABLE IF EXISTS "${t.name}"`));
+  }
   db.exec(SCHEMA);
   if (!get("SELECT 1 AS x FROM users WHERE role = 'ops'")) seed();
+}
+
+// In-app inbox. In production each message also goes out by SMS or WhatsApp.
+export function notify(userId, day, kind, en, ur) {
+  if (!userId) return;
+  run('INSERT INTO notifications (user_id, day, kind, title, body, title_ur, body_ur, channel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', userId, day, kind, en[0], en[1], ur ? ur[0] : null, ur ? ur[1] : null, ur ? 'SMS + voice note' : 'SMS + email');
 }
 
 export function nextSeq(kind) {

@@ -3,7 +3,7 @@ import { api, useApp, useData, useRouter, Link, FundBar, Tag, Stat, Loading, Err
 
 const STATUS = {
   listed: ['info', 'Raising'], ahead: ['ok', 'Going ahead'], offer: ['watch', 'Smaller contract offered'], lapsed: ['done', 'Not funded · refunded'],
-  contracted: ['ok', 'Contract signed'], paid: ['ok', 'Grower paid · growing'], delivered: ['ok', 'In warehouse'], settled: ['done', 'Sold · settled'],
+  contracted: ['info', 'Signing'], paid: ['ok', 'Signed and paid · growing'], short: ['watch', 'Part delivered'], delivered: ['ok', 'In warehouse'], settled: ['done', 'Sold · settled'],
 };
 export const statusTag = (s) => { const [k, l] = STATUS[s] || ['info', s]; return <Tag k={k}>{l}</Tag>; };
 
@@ -41,7 +41,7 @@ export default function Market() {
             </div>
           </div>
           <div className="grid g3">
-            {[['Pay into escrow', `By ${clock.dates.close}. Barak cannot spend it.`], ['Grower paid, PAT minted', `${clock.dates.mint}, before sowing ends ${clock.dates.sowBy}.`], ['Wheat delivered, then sold', `By ${clock.dates.deliverBy}. Cash out in April or September.`]].map(([t, b], i) => (
+            {[['Pay into escrow', `By ${clock.dates.close}. Barak cannot spend it.`], ['Grower signs and is paid', `By ${clock.dates.mint}, before sowing ends ${clock.dates.sowBy}. PAT minted then.`], ['Wheat delivered, then sold', `By ${clock.dates.deliverBy}. Cash out in April or September.`]].map(([t, b], i) => (
               <div key={t} className="card flat"><div className="kicker">Step {i + 1}</div><b style={{ fontWeight: 500 }}>{t}</b><span className="small muted">{b}</span></div>
             ))}
           </div>
@@ -69,7 +69,7 @@ export default function Market() {
           {open ? (
             <button className="btn primary block" disabled={amount < 25000} onClick={() => go(`/reserve?kind=pool&pool=starter&amount=${amount}`)}>{amount < 25000 ? 'Minimum Rs 25,000' : `Reserve ${pkr(amount)} in the Starter pool`}</button>
           ) : <button className="btn block" disabled>The raise closed on {clock.dates.close}</button>}
-          <div className="xs faint" style={{ textAlign: 'center' }}>Spread over 10 fields. Pay within 24 hours to keep your place.</div>
+          <div className="xs faint" style={{ textAlign: 'center' }}>Spread over 10 fields. Pay within 24 hours; withdraw for a full refund until {clock.dates.withdrawBy}.</div>
         </section>
       </section>
 
@@ -108,6 +108,19 @@ export default function Market() {
         </div>
         <div className="grid g3">{ls.map((l) => <FieldCard key={l.id} l={l} open={open} />)}</div>
         <p className="xs faint">Bar: dark green is paid, light green is reserved and awaiting payment, amber is yours. The tick is the 80% line a field must reach to go ahead.</p>
+      </section>
+
+      <section className="card stack">
+        <h2>How it works under Shariah</h2>
+        <div className="grid g3">
+          {[['A Salam purchase', `You buy wheat in advance. The full price is paid to the grower the day the contract is signed; quantity, grade, date and place of delivery are fixed. No loan, no interest.`],
+            ['Barak is your agent', 'Under a Wakalah agreement Barak signs, monitors, takes delivery and sells for you for fixed fees. It takes no share of your gain or loss.'],
+            ['Wheat by grade, not one field', 'The contract is for Grade 1 wheat. Each field is the grower\'s intended source and is monitored, but the grower may deliver the same grade from elsewhere.'],
+            ['No resale before delivery', 'Salam goods cannot be sold on before delivery, so PAT stay locked until the wheat is weighed into the warehouse.'],
+            ['If wheat is short', 'The grower delivers later (up to 30 days) or refunds the price of the missing part, with no profit added. Late amounts go to charity.'],
+            ['Your money, held apart', 'Payments sit in a client account at the bank. Barak cannot spend them; they leave only to a signed, paid grower or back to you.']].map(([t, b]) => <div key={t} className="card flat"><b style={{ fontWeight: 500 }}>{t}</b><span className="small muted">{b}</span></div>)}
+        </div>
+        <span className="xs faint">Contracts drafted for review by Barak's lawyer and Shariah advisor [to be appointed]. Field monitoring with LIMS. PVARA regulatory sandbox application in preparation.</span>
       </section>
 
       <PriceRule P={P} />

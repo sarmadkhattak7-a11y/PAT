@@ -20,7 +20,7 @@ export default function Crop() {
   const f = data.fields[sel];
   const fill = (x) => (!x.active ? 'oklch(0.4 0.02 120)' : layer === 'risk' ? RISK[x.risk] : color(layer === 'ndvi' ? x.ndvi : x.ndmi, layer));
   return (
-    <div className="wrap stack-l" style={{ paddingTop: 28, paddingBottom: 48 }}>
+    <div className="stack-l">
       <div className="between">
         <div className="stack-s"><div className="kicker">Barak Crop Monitoring</div><h1>{data.stage.en} · {clock.date}</h1><span className="small muted">Sentinel-2 indices every 5 days, weather and soil. {data.median != null ? `Area median NDVI ${data.median}.` : 'Crop checks start after germination (late November).'}</span></div>
         <div className="chips" role="group" aria-label="Map layer">{[['ndvi', 'Crop health (NDVI)'], ['ndmi', 'Moisture (NDMI)'], ['risk', 'Delivery risk']].map(([k, l]) => <button key={k} className="chip" aria-pressed={layer === k} onClick={() => setLayer(k)}>{l}</button>)}</div>

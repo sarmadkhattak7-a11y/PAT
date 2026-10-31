@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { api, useApp, useData, useRouter, useAction, Link, Tag, Stat, Loading, Err, Timeline, fmt, rs, pkr, pct, Spark } from '../lib.jsx';
+import { api, useApp, useData, useRouter, useAction, Link, Tag, Stat, Loading, Err, Timeline, fmt, rs, pkr, pct, lakh, Spark } from '../lib.jsx';
 import { LOCAL } from '../lib.jsx';
 import { LoginForm } from './Login.jsx';
+import { DirectPortfolio } from './Direct.jsx';
 
-const ORDER = { reserved: ['watch', 'Reserved · unpaid'], paid: ['info', 'Paid · in escrow'], expired: ['done', 'Expired'], cancelled: ['done', 'Cancelled'], lapsed: ['done', 'Lapsed unpaid'], allotted: ['ok', 'Allotted'], refunded: ['done', 'Refunded'], tokens: ['ok', 'PAT minted'] };
-const EV = { mint: 'Minted · locked', unlock: 'Unlocked · in warehouse', transfer: 'Transfer', burn: 'Burned · sold', shortfall: 'Shortfall · insured' };
+const ORDER = { reserved: ['watch', 'Reserved · unpaid'], paid: ['info', 'Paid · in escrow'], expired: ['done', 'Expired'], cancelled: ['done', 'Cancelled'], lapsed: ['done', 'Lapsed unpaid'], allotted: ['ok', 'Allotted'], refunded: ['done', 'Refunded'], tokens: ['ok', 'PAT minted'], withdrawn: ['done', 'Withdrawn · refunded'] };
+const EV = { mint: 'Minted · locked', unlock: 'Unlocked · in warehouse', transfer: 'Transfer', burn: 'Burned · sold', shortfall: 'Undelivered · price refunded' };
 
 export default function Portfolio() {
   const { user, clock, pricing } = useApp();
@@ -14,17 +15,19 @@ export default function Portfolio() {
   if (user.role !== 'investor') return <div className="wrap" style={{ padding: 48 }}><p>This page is for investor accounts.</p></div>;
   if (error) return <div className="wrap" style={{ padding: 32 }}><Err e={error} /></div>;
   if (!data) return <Loading />;
+  if (data.direct) return <DirectPortfolio p={data.direct} />;
   const v = data.value;
-  const got = data.payouts.reduce((s, p) => s + p.net, 0) + data.cash.filter((c) => c.type === 'insurance').reduce((s, c) => s + c.amount, 0);
+  const got = data.payouts.reduce((s, p) => s + p.net, 0) + data.cash.filter((c) => c.type === 'refund' && /undelivered/.test(c.memo)).reduce((s, c) => s - c.amount, 0);
   const HEAD = {
     none: ['No wheat yet', 'Pick a pool or a field in the marketplace to start.'],
     reserved: ['Reserved, waiting for payment', 'Pay within 24 hours to keep your place.'],
-    waiting: ['Paid and waiting for the close', `Your money is in escrow. The market closes on ${clock.dates.close}.`],
-    signing: ['Contracts signed', `Growers are paid on ${clock.dates.mint}, when your PAT are minted.`],
-    held: ['Your wheat is growing', 'Tokens are locked until the wheat is weighed into the warehouse in April.'],
-    stored: ['Your wheat is in the warehouse', 'Every PAT is backed by graded wheat under an electronic warehouse receipt.'],
+    waiting: ['Paid and waiting for the close', `Your money is in escrow. You can withdraw it until ${clock.dates.withdrawBy}. The market closes on ${clock.dates.close}.`],
+    signing: ['Growers are signing their contracts', 'Each grower is paid the day they sign, and your PAT for that field are minted then.'],
+    held: ['Your wheat is growing', 'Tokens are locked until the wheat is weighed into the warehouse in April. Season updates arrive below and in your inbox.'],
+    short: ['Some wheat is still due', 'A grower delivered less than owed. Barak, as your agent, is extending the delivery or recovering the price for the missing part.'],
+    stored: ['Your wheat is in the warehouse', 'Every PAT is backed by graded wheat under an electronic warehouse receipt. You can sell early or wait for your chosen sale.'],
     paidout: ['Paid out', 'Your wheat has been sold and the proceeds sent to your bank account.'],
-    refunded: ['Refunded', 'The fields you backed did not go ahead. Your money has been returned.'],
+    refunded: ['Refunded', 'The fields you backed did not go ahead, or you withdrew. Your money has been returned.'],
   }[data.stage];
   return (
     <div className="wrap stack-l" style={{ paddingTop: 28, paddingBottom: 48 }}>
@@ -35,19 +38,26 @@ export default function Portfolio() {
           <p className="muted">{HEAD[1]}</p>
           <div className="card"><div className="between small muted"><span>Season</span><span>{clock.date}</span></div><Timeline clock={clock} /></div>
           {data.orders.filter((o) => o.status === 'reserved' && clock.day <= o.expiresDay).map((o) => <PayNow key={o.id} o={o} />)}
+          {data.stage === 'signing' && (
+            <div className="card stack-s">
+              <b style={{ fontWeight: 500 }}>Contract signing</b>
+              {data.signing.map((s) => <div key={s.grower} className="between small"><span>{s.grower}</span>{s.paid ? <Tag k="ok">Signed and paid</Tag> : s.signed ? <Tag k="info">Signed · payment today</Tag> : <Tag k="watch">Waiting to sign</Tag>}</div>)}
+              <span className="xs faint">Under Salam the full price is paid when the contract is made, so nothing is released to a grower who has not signed.</span>
+            </div>
+          )}
         </div>
         <div className="card lift pad-l">
           {v ? (
             <>
               <div className="kicker">{data.stage === 'paidout' ? 'Paid out' : 'Value today'}</div>
               {data.stage === 'paidout' ? (
-                <><div className="huge">{pkr(got)}</div><div className="small muted">net sale proceeds plus insurance, from {pkr(v.cost)} put in · <span className={got >= v.cost ? 'up' : 'down'}>{pct(got / v.cost - 1)}</span></div></>
+                <><div className="huge">{pkr(got)}</div><div className="small muted">net, from {pkr(v.cost)} put in · <span className={got >= v.cost ? 'up' : 'down'}>{pct(got / v.cost - 1)}</span></div></>
               ) : (
                 <><div className="huge">{pkr(v.markNow)}</div><div className="small muted">{fmt(v.pat)} PAT ({(v.pat / 40).toFixed(1)} maund) at today's PMEX Rs {fmt(v.price)}, after fee and storage · <span className={v.retNow >= 0 ? 'up' : 'down'}>{pct(v.retNow)}</span> on {pkr(v.cost)}</div></>
               )}
               {data.stage !== 'paidout' && <><hr className="rule" />
-              <table className="tbl small"><tbody>{v.scenarios.map((s) => <tr key={s.label}><td>{s.label}</td><td className="r muted">Rs {fmt(s.px)}</td><td className="r">{pkr(s.value)}</td><td className={'r ' + (s.ret >= 0 ? 'up' : 'down')}>{pct(s.ret)}</td></tr>)}</tbody></table>
-              <span className="xs faint">Break-even Rs {fmt(v.breakeven)} per 40 kg. Before withholding tax.</span></>}
+                <table className="tbl small"><tbody>{v.scenarios.map((s) => <tr key={s.label}><td>{s.label}</td><td className="r muted">Rs {fmt(s.px)}</td><td className="r">{pkr(s.value)}</td><td className={'r ' + (s.ret >= 0 ? 'up' : 'down')}>{pct(s.ret)}</td></tr>)}</tbody></table>
+                <span className="xs faint">Break-even Rs {fmt(v.breakeven)} per 40 kg. Before withholding tax.</span></>}
             </>
           ) : data.waiting ? (
             <><div className="kicker">In escrow</div><div className="huge">{pkr(data.waiting)}</div><div className="small muted">becomes about {fmt(Math.floor(data.waiting / pricing.kgCost))} PAT if every field goes ahead</div></>
@@ -61,19 +71,27 @@ export default function Portfolio() {
         <section className="stack">
           <h2>Your growers</h2>
           <div className="scroll-x"><table className="tbl">
-            <thead><tr><th>Grower</th><th className="r">PAT (kg)</th><th>Status</th><th className="r">Crop coverage</th><th>Warehouse receipt</th></tr></thead>
+            <thead><tr><th>Grower</th><th className="r">PAT (kg)</th><th>Status</th><th className="r">Crop cover</th><th>Delivery</th></tr></thead>
             <tbody>{data.holdings.map((h) => (
               <tr key={h.field}><td>{h.grower}<div className="xs faint">{h.field} · {h.village}</div></td><td className="r">{fmt(h.pat)}</td>
-                <td>{h.locked ? <Tag k="info">Locked · growing</Tag> : <Tag k="ok">Unlocked · in warehouse</Tag>}</td>
-                <td className="r">{h.ndvi != null && !h.delivery ? <Tag k={h.cov >= 1.3 ? 'ok' : h.cov >= 1.1 ? 'watch' : 'risk'}>{h.cov.toFixed(2)}×</Tag> : '–'}</td>
-                <td>{h.delivery ? <span className="small">{h.delivery.ewr} · {fmt(h.delivery.kg)} kg · {h.delivery.moisture}%</span> : <span className="small muted">Due by {clock.dates.deliverBy}</span>}</td></tr>
+                <td>{h.status === 'short' ? <Tag k="watch">Part delivered</Tag> : h.locked ? <Tag k="info">Locked · growing</Tag> : <Tag k="ok">In warehouse</Tag>}</td>
+                <td className="r">{h.ndvi != null && h.locked ? <Tag k={h.cov >= 1.3 ? 'ok' : h.cov >= 1.1 ? 'watch' : 'risk'}>{h.cov.toFixed(2)}×</Tag> : '–'}</td>
+                <td className="small">{h.status === 'short' ? `${fmt(h.deliveredKg)} of ${fmt(h.owedKg)} kg${h.extension ? ' · rest due ' + h.extension : ''}` : h.delivery ? `${h.delivery.ewr} · moisture ${h.delivery.moisture}%` : <span className="muted">Due by {clock.dates.deliverBy}</span>}</td></tr>
             ))}</tbody>
           </table></div>
-          <p className="xs faint">Coverage is the field's estimated yield divided by the wheat it owes. 1.5× means it should grow 50% more than it has to deliver.</p>
+          <p className="xs faint">Crop cover is the field's estimated yield divided by the wheat it owes. 1.5× means it should grow 50% more than it has to deliver.</p>
         </section>
       )}
 
-      {(data.pat > 0 || data.stage === 'signing') && !clock.saleSep && <Election data={data} />}
+      {data.updates.length > 0 && (
+        <section className="card stack-s">
+          <div className="between"><h2>Season updates</h2><span className="small muted">From satellite checks and field officer visits</span></div>
+          <div className="tl">{data.updates.slice(0, 8).map((u, i) => <div key={i} className="it"><span className="xs faint">{u.date}</span><span className={'dot ' + (u.k === 'ok' ? '' : 'watch')} /><span className="small"><b style={{ fontWeight: 500 }}>{u.t}.</b> <span className="muted">{u.b}</span></span></div>)}</div>
+        </section>
+      )}
+
+      {data.canSellNow && <SellNow data={data} />}
+      {(data.pat > 0 || data.stage === 'signing') && !clock.saleSep && clock.day <= clock.DAY.electBy && <Election data={data} />}
       {data.holdings.some((h) => !h.locked) && <Transfer data={data} />}
       {data.payouts.length > 0 && <Statement data={data} />}
 
@@ -81,29 +99,66 @@ export default function Portfolio() {
         <div className="card stack-s">
           <h2>Orders and documents</h2>
           {!data.orders.length && <p className="muted small">None yet.</p>}
-          {data.orders.map((o) => {
-            const [k, l] = ORDER[o.status] || ['info', o.status];
-            return (
-              <div key={o.id} className="stack-s" style={{ borderBottom: '1px solid var(--divider)', paddingBottom: 10 }}>
-                <div className="between"><b style={{ fontWeight: 500 }}>{o.kind === 'pool' ? (o.pool === 'core' ? 'Large farms pool' : 'Starter pool') : o.lines[0] && o.lines[0].grower} · {pkr(o.amount)}</b><Tag k={k}>{l}</Tag></div>
-                <span className="xs faint">{o.id} · reserved {o.reservedDate}{o.paidDate ? ' · paid ' + o.paidDate + ' by ' + o.method : ''} · {o.lines.length} field{o.lines.length > 1 ? 's' : ''}</span>
-                {['paid', 'allotted', 'tokens', 'refunded'].includes(o.status) && <Link to={'/doc/' + o.id} className="small">Purchase note and Salam terms →</Link>}
-              </div>
-            );
-          })}
+          {data.orders.map((o) => <OrderRow key={o.id} o={o} />)}
         </div>
-        <div className="card stack-s">
-          <h2>Money and token record</h2>
-          {[...data.cash.map((c) => ({ k: 'c' + c.id, day: c.day, date: c.date, t: c.memo + (c.n > 1 ? ' · ' + c.n + ' fields' : ''), v: (c.type === 'refund' ? '' : c.amount < 0 ? '−' : '') + rs(Math.abs(c.amount)), cls: c.type === 'deposit' ? '' : 'up' })),
-            ...data.events.map((e) => ({ k: 't' + e.seq, day: e.day, date: e.date, t: `${EV[e.type]} · ${e.grower}`, v: (e.to_user === user.id ? '+' : '−') + fmt(e.pat) + ' PAT', cls: 'muted', hash: e.hash }))]
-            .sort((a, b) => b.day - a.day).slice(0, 30).map((r) => (
-              <div key={r.k} className="ev" style={{ gridTemplateColumns: '90px minmax(0,1fr) auto' }}><span className="xs faint">{r.date}</span><span className="small">{r.t}{r.hash && <div className="hash">{r.hash.slice(0, 16)}…</div>}</span><span className={'small ' + r.cls}>{r.v}</span></div>
-            ))}
-          {!data.cash.length && <p className="muted small">Nothing yet.</p>}
-          <Link to="/ledger" className="small">Check every token on the public ledger →</Link>
+        <div className="stack">
+          {data.zakat && (
+            <div className="card stack-s">
+              <h2>Zakat estimate</h2>
+              <div className="big">{rs(data.zakat.due)}</div>
+              <span className="small muted">2.5% of {rs(data.zakat.base)}, today's value of your wheat held for trade. Use the value on your own zakat date and ask your scholar about your situation.</span>
+            </div>
+          )}
+          <div className="card stack-s">
+            <h2>Money and token record</h2>
+            {[...data.cash.map((c) => ({ k: 'c' + c.id, day: c.day, date: c.date, t: c.memo + (c.n > 1 ? ' · ' + c.n + ' fields' : ''), v: (c.amount < 0 && c.type !== 'refund' ? '−' : '') + rs(Math.abs(c.amount)), cls: c.type === 'deposit' ? '' : 'up' })),
+              ...Object.values(data.events.reduce((g, e) => { const key = e.type + e.day + (e.to_user === user.id); (g[key] = g[key] || []).push(e); return g; }, {})).map((es) => ({ k: 't' + es[0].seq, day: es[0].day, date: es[0].date, t: `${EV[es[0].type]} · ${es.length > 1 ? es.length + ' growers' : es[0].grower}`, v: (es[0].to_user === user.id ? '+' : '−') + fmt(es.reduce((s, e) => s + e.pat, 0)) + ' PAT', cls: 'muted', hash: es[0].hash }))]
+              .sort((a, b) => b.day - a.day).slice(0, 30).map((r) => (
+                <div key={r.k} className="ev"><span className="xs faint">{r.date}</span><span className="small">{r.t}{r.hash && <div className="hash">{r.hash.slice(0, 16)}…</div>}</span><span className={'small ' + r.cls}>{r.v}</span></div>
+              ))}
+            {!data.cash.length && <p className="muted small">Nothing yet.</p>}
+            <span className="xs faint">Each token event carries a hash linked to the one before, so a changed record shows. Barak publishes a reserve check each week: tokens outstanding against wheat owed or in the warehouse.</span>
+          </div>
         </div>
       </section>
     </div>
+  );
+}
+
+function OrderRow({ o }) {
+  const a = useAction(); const { clock } = useApp();
+  const [k, l] = ORDER[o.status] || ['info', o.status];
+  return (
+    <div className="stack-s" style={{ borderBottom: '1px solid var(--divider)', paddingBottom: 10 }}>
+      <div className="between"><b style={{ fontWeight: 500 }}>{o.kind === 'pool' ? (o.pool === 'core' ? 'Large farms pool' : 'Starter pool') : o.lines[0] && o.lines[0].grower} · {pkr(o.amount)}</b><Tag k={k}>{l}</Tag></div>
+      <span className="xs faint">{o.id} · reserved {o.reservedDate}{o.paidDate ? ' · paid ' + o.paidDate + ' by ' + o.method : ''} · {o.lines.length} field{o.lines.length > 1 ? 's' : ''}</span>
+      <div className="row" style={{ gap: 8 }}>
+        {['paid', 'allotted', 'tokens', 'refunded'].includes(o.status) && <Link to={'/doc/' + o.id} className="small">Purchase note and Salam terms →</Link>}
+        {o.withdrawable && <button className="btn small" disabled={a.busy} onClick={() => a.run(() => api(`/api/orders/${o.id}/withdraw`, {}), 'Withdrawn. Full refund on its way.')}>Withdraw (until {clock.dates.withdrawBy})</button>}
+      </div>
+      <Err e={a.error} />
+    </div>
+  );
+}
+
+function SellNow({ data }) {
+  const a = useAction(); const { clock } = useApp();
+  const [arm, setArm] = useState(false);
+  const e = data.value && data.value.early;
+  if (!e) return null;
+  return (
+    <section className="card stack-s">
+      <div className="between"><h2>Sell now</h2><span className="small muted">Your wheat is in the warehouse, so it is yours to sell</span></div>
+      <p className="small muted">Barak sells it for you today at Rs {fmt(clock.prices.pmex)} per 40 kg. Storage is charged only for the months it was stored.</p>
+      <div className="grid g4">
+        <div><div className="small muted">Gross</div><b style={{ fontWeight: 500 }}>{rs(e.gross)}</b></div>
+        <div><div className="small muted">Fee 3.5%</div>{rs(e.fee)}</div>
+        <div><div className="small muted">Storage + tax</div>{rs(e.storage + e.tax)}</div>
+        <div><div className="small muted">You receive</div><b style={{ fontWeight: 500 }}>{rs(e.net)}</b></div>
+      </div>
+      <Err e={a.error} />
+      <button className="btn" style={{ alignSelf: 'flex-start' }} disabled={a.busy} onClick={() => { if (!arm) { setArm(true); setTimeout(() => setArm(false), 5000); return; } a.run(() => api('/api/sell-now', {}), 'Sold. Proceeds on their way to your bank.'); }}>{arm ? 'Tap again to sell all at today\'s price' : 'Sell all my wheat now'}</button>
+    </section>
   );
 }
 
@@ -175,7 +230,7 @@ function Statement({ data }) {
       <h2>Settlement statement</h2>
       <div className="scroll-x"><table className="tbl">
         <thead><tr><th>Sale</th><th className="r">PAT</th><th className="r">Price / 40 kg</th><th className="r">Gross</th><th className="r">Fee 3.5%</th><th className="r">Storage</th><th className="r">Tax withheld</th><th className="r">Net paid</th></tr></thead>
-        <tbody>{data.payouts.map((p) => <tr key={p.id}><td>{p.win === 'apr' ? 'April' : 'September'}</td><td className="r">{fmt(p.pat)}</td><td className="r">{fmt(p.price)}</td><td className="r">{rs(p.gross)}</td><td className="r">{rs(p.fee)}</td><td className="r">{rs(p.storage)}</td><td className="r">{rs(p.tax)}</td><td className="r"><b style={{ fontWeight: 500 }}>{rs(p.net)}</b></td></tr>)}</tbody>
+        <tbody>{data.payouts.map((p) => <tr key={p.id}><td>{p.win === 'apr' ? 'April' : p.win === 'early' ? 'Early sale' : 'September'}</td><td className="r">{fmt(p.pat)}</td><td className="r">{fmt(p.price)}</td><td className="r">{rs(p.gross)}</td><td className="r">{rs(p.fee)}</td><td className="r">{rs(p.storage)}</td><td className="r">{rs(p.tax)}</td><td className="r"><b style={{ fontWeight: 500 }}>{rs(p.net)}</b></td></tr>)}</tbody>
       </table></div>
       <span className="xs faint">Withholding under s.153 is shown at the estimated TY2027 rate until confirmed by Barak's tax adviser. Keep this statement for your return.</span>
     </section>
@@ -202,8 +257,8 @@ export function OrderDoc({ id }) {
           <li>Subject matter: wheat, Grade 1 (moisture 10% or less, no foreign matter, under 2% broken grain), 20 maund per contracted acre.</li>
           <li>Price: Rs {fmt(pricing.price)} per 40 kg, paid in full to the grower at contract on or before {clock.dates.mint}. Barak's purchase fee of 2.5% is added to the buyer's price.</li>
           <li>Delivery: to the certified warehouse by {clock.dates.deliverBy}. An electronic warehouse receipt is issued on intake.</li>
-          <li>Each PAT represents 1 kg of the wheat owed. PAT are non-transferable until the warehouse receipt is issued.</li>
-          <li>Shortfall: if less wheat is delivered, the gap is covered by crop insurance or later delivery, never by the grower's land or cash.</li>
+          <li>Each PAT represents 1 kg of the wheat owed. The wheat is described by grade, not as the crop of one field; the listed field is the grower's intended source and is monitored. PAT cannot be resold until the warehouse receipt is issued (no sale of Salam goods before delivery).</li>
+          <li>Shortfall: the grower delivers the missing wheat later (up to 30 days), from any source of the same grade, or refunds its price with no profit added. Barak returns its fee on that part. A late-delivery amount, if any, goes to charity.</li>
           <li>Sale: in April or September at the buyer's election; Barak sells as agent and pays proceeds less a 3.5% fee, storage and withholding tax.</li>
           <li>Funds are held in escrow at the bank. A field under 80% paid at close does not go ahead and is refunded in full.</li>
         </ol>

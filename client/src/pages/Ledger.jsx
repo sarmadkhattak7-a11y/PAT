@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp, useData, Tag, Stat, Loading, Err, Spark, fmt } from '../lib.jsx';
 
-const EV = { mint: ['info', 'Mint'], unlock: ['ok', 'Unlock'], transfer: ['info', 'Transfer'], burn: ['done', 'Burn'], shortfall: ['watch', 'Shortfall'] };
+const EV = { mint: ['info', 'Mint'], unlock: ['ok', 'Unlock'], transfer: ['info', 'Transfer'], burn: ['done', 'Burn'], shortfall: ['watch', 'Cancelled · refunded'] };
 const who = (n) => (!n ? null : n.role === 'treasury' ? 'Barak treasury' : n.bot ? 'Investor ' + n.name.split(' ')[0].slice(0, 1) + '•••' : n.name.split(' ')[0] + ' •••');
 
 export default function Ledger() {
@@ -13,11 +13,11 @@ export default function Ledger() {
   const R = data.reserve;
   const ev = data.events.filter((e) => type === 'all' || e.type === type);
   return (
-    <div className="wrap stack-l" style={{ paddingTop: 28, paddingBottom: 48 }}>
+    <div className="stack-l">
       <div className="stack-s">
         <div className="kicker">{data.token.name} ({data.token.symbol}) · Rabi 2026-27</div>
         <h1>Token ledger</h1>
-        <p className="muted">Every kilo of wheat is one token. Follow each mint, transfer and burn, and check that every outstanding token is backed by a Salam contract or by wheat in the certified warehouse.</p>
+        <p className="muted">Barak Control view. Every kilo of wheat is one token. Follow each mint, transfer and burn, and check that every outstanding token is backed by a signed, paid Salam contract or by wheat in the certified warehouse. Investors see their own token records in Barak Invest; Barak publishes the reserve check weekly.</p>
         <span className="small faint">{data.token.series} · {data.token.unit} · {data.token.network}</span>
       </div>
       <section className="grid g4">
@@ -46,12 +46,17 @@ export default function Ledger() {
         </div>
         <div className="card stack-s">
           <h2>Token lifecycle</h2>
-          {[['Minted and locked', 'Only when cash is paid to a verified grower; the amount equals the kg owed. Cannot be transferred.'], ['Backed by the warehouse', 'The warehouse weighs and grades the wheat and issues an electronic receipt. Tokens unlock and can move between KYC-verified holders.'], ['Burned at sale', 'Wheat is sold in April or September; tokens are burned and PKR paid to the holder.'], ['Shortfall', 'If less wheat is delivered, the gap is burned against crop insurance and holders are paid at cost.']].map(([t, b], i) => <div key={t} className="card flat"><b style={{ fontWeight: 500 }}>{i + 1}. {t}</b><span className="small muted">{b}</span></div>)}
+          {[['Minted and locked', 'Only when cash is paid to a verified grower; the amount equals the kg owed. Cannot be transferred.'], ['Backed by the warehouse', 'The warehouse weighs and grades the wheat and issues an electronic receipt. Tokens unlock and can move between KYC-verified holders.'], ['Burned at sale', 'Wheat is sold in April or September; tokens are burned and PKR paid to the holder.'], ['Shortfall', 'If wheat is not delivered after any extension, the grower refunds its price with no profit added; those PAT are cancelled and holders are paid back what they paid.']].map(([t, b], i) => <div key={t} className="card flat"><b style={{ fontWeight: 500 }}>{i + 1}. {t}</b><span className="small muted">{b}</span></div>)}
           {data.supply.length > 1 && <><span className="small muted">Supply outstanding, PAT</span><Spark data={data.supply.map((p) => p.out)} h={60} /></>}
         </div>
       </section>
       <section className="card stack-s">
-        <div className="between"><h2>Events</h2><div className="chips">{['all', 'mint', 'unlock', 'transfer', 'shortfall', 'burn'].map((k) => <button key={k} className="chip" aria-pressed={type === k} onClick={() => setType(k)}>{k === 'all' ? 'All' : EV[k][1]}</button>)}</div></div>
+        <div className="between"><h2>Pilot contract records · {data.pilot.ref}</h2><span className="small muted">{data.pilot.note}</span></div>
+        {!data.pilot.records.length && <p className="muted small">No records yet.</p>}
+        {data.pilot.records.slice(0, 12).map((r) => <div key={r.seq} className="ev"><span className="xs faint">#{r.seq} · {r.date}</span><span className="small">{r.title}<div className="hash">{r.hash}</div></span><span /></div>)}
+      </section>
+      <section className="card stack-s">
+        <div className="between"><h2>Token events</h2><div className="chips">{['all', 'mint', 'unlock', 'transfer', 'shortfall', 'burn'].map((k) => <button key={k} className="chip" aria-pressed={type === k} onClick={() => setType(k)}>{k === 'all' ? 'All' : EV[k][1]}</button>)}</div></div>
         {!ev.length && <p className="muted">No events yet.</p>}
         {ev.slice(0, 150).map((e) => (
           <div key={e.seq} className="ev">
