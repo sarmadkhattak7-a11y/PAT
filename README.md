@@ -22,6 +22,14 @@ npm test
 
 runs a whole season through the HTTP API (sign-up to September payout) against a throwaway database.
 
+## Browser-only version (no server)
+
+```bash
+npm run build:static
+```
+
+builds `client/dist-local`: the same app, with the server's code and SQLite (compiled to JavaScript) running inside the browser. Data is kept in the visitor's own browser, so each visitor gets a private copy of the demo. Host the folder on any static host (GitHub Pages, Netlify, a claude.ai artifact).
+
 ## Demo accounts
 
 Sign-in is by phone and one-time code. No SMS gateway is connected, so the code is shown on screen.

@@ -192,7 +192,7 @@ table.tbl tr.click:hover td { background: color-mix(in srgb, var(--accent) 5%, t
 .x { margin-inline-start: auto; border: 0; background: transparent; font-size: 22px; line-height: 1; width: 44px; height: 44px; border-radius: 50%; color: var(--muted); }
 
 /* demo dock */
-.dock { position: fixed; right: 16px; bottom: 16px; z-index: 40; font-family: var(--sans); }
+.dock { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 40; font-family: var(--sans); }
 .dock .panel { width: 320px; background: oklch(0.22 0.03 155); color: oklch(0.94 0.01 150); border-radius: 12px; padding: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; gap: 10px; font-size: 13px; direction: ltr; text-align: left; }
 .dock .panel button { background: oklch(0.3 0.03 155); color: inherit; border: 1px solid oklch(0.4 0.03 155); border-radius: 6px; min-height: 32px; padding: 0 10px; font-size: 12px; }
 .dock .panel button:hover { border-color: oklch(0.72 0.15 138); }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api, useApp, useData, useRouter, useAction, Link, Tag, Stat, Loading, Err, Timeline, fmt, rs, pkr, pct, Spark } from '../lib.jsx';
+import { LOCAL } from '../lib.jsx';
 import { LoginForm } from './Login.jsx';
 
 const ORDER = { reserved: ['watch', 'Reserved · unpaid'], paid: ['info', 'Paid · in escrow'], expired: ['done', 'Expired'], cancelled: ['done', 'Cancelled'], lapsed: ['done', 'Lapsed unpaid'], allotted: ['ok', 'Allotted'], refunded: ['done', 'Refunded'], tokens: ['ok', 'PAT minted'] };
@@ -189,7 +190,7 @@ export function OrderDoc({ id }) {
   if (!o) return <div className="wrap" style={{ padding: 48 }}>Not found.</div>;
   return (
     <div className="wrap" style={{ paddingTop: 24, paddingBottom: 48, maxWidth: 820 }}>
-      <div className="row" style={{ marginBottom: 12 }}><Link to="/portfolio" className="small">← My wheat</Link><div style={{ flex: 1 }} /><button className="btn small" onClick={() => print()}>Print or save as PDF</button></div>
+      <div className="row" style={{ marginBottom: 12 }}><Link to="/portfolio" className="small">← My wheat</Link><div style={{ flex: 1 }} />{!LOCAL && <button className="btn small" onClick={() => print()}>Print or save as PDF</button>}</div>
       <article className="card pad-l stack">
         <div className="kicker">Purchase note · Salam</div>
         <h1>{o.id}</h1>

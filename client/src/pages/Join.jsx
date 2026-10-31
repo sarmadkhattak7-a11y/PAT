@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api, useApp, useAction, Err, fmt } from '../lib.jsx';
+import { api, useApp, useAction, Err, fmt, asset } from '../lib.jsx';
 
 export default function Join() {
   const { ur, pricing, clock } = useApp();
@@ -20,7 +20,7 @@ export default function Join() {
     <div className="wrap stack-l" style={{ paddingTop: 24, paddingBottom: 48 }}>
       <section className="split">
         <div className="stack">
-          <div className="hero-img" style={{ height: 260 }}><img src="/img/field2.jpg" alt="" /><span className="illus">{t('Illustrative image', 'تمثیلی تصویر')}</span></div>
+          <div className="hero-img" style={{ height: 260 }}><img src={asset('img/field2.jpg')} alt="" /><span className="illus">{t('Illustrative image', 'تمثیلی تصویر')}</span></div>
           <div className="kicker">{t('For wheat growers · first fields in Sahiwal & Okara', 'گندم کے کاشتکاروں کے لیے · ساہیوال و اوکاڑہ')}</div>
           <h1 className={ur ? '' : 'display'} style={ur ? { fontSize: 32, lineHeight: 1.8 } : null}>{t('Get paid for your wheat before you sow.', 'گندم کی قیمت بوائی سے پہلے، 10 نومبر تک')}</h1>
           <p className="muted" style={{ fontSize: 17 }}>{t('Sell part of your harvest at a fixed price under a Salam contract. Paid in advance. No loan, no interest, no forced sale. You deliver to the certified warehouse in April and keep the rest of your harvest.', 'سلم معاہدے کے تحت اپنی فصل کا کچھ حصہ طے شدہ قیمت پر بیچیں۔ پیشگی ادائیگی۔ نہ قرض، نہ سود، نہ زبردستی فروخت۔ اپریل میں گودام میں ترسیل، باقی فصل آپ کی۔')}</p>

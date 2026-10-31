@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, AppCtx, Router, useRouter, Link, Loading, fmt } from './lib.jsx';
+import { api, AppCtx, Router, useRouter, Link, Loading, fmt, asset, LOCAL } from './lib.jsx';
 import Market, { FieldPage } from './pages/Market.jsx';
 import Reserve from './pages/Reserve.jsx';
 import Portfolio, { OrderDoc } from './pages/Portfolio.jsx';
@@ -53,7 +53,7 @@ function Shell() {
     <AppCtx.Provider value={ctx}>
       <div className={'app' + (dark ? ' theme-dark' : '')} dir={lang === 'ur' ? 'rtl' : 'ltr'} lang={lang}>
         <TopBar route={route} user={user} urPage={urPage} />
-        {(route === '/' || route.startsWith('/field') || route === '/reserve') && <div className="banner en">Salam offering platform · Preview. Outside funding opens after PVARA approval. Payments, SMS and identity checks run in sandbox mode.</div>}
+        {(route === '/' || route.startsWith('/field') || route === '/reserve') && <div className="banner en">Salam offering platform · Preview. Outside funding opens after PVARA approval. Payments, SMS and identity checks run in sandbox mode.{LOCAL ? ' This demo runs in your browser; what you do stays on this device.' : ''}</div>}
         {showTicker && <Ticker clock={state.clock} />}
         <main style={{ flex: 1 }}>{page}</main>
         <footer className="foot en" dir="ltr"><div className="wrap between"><span>Barak AgriTech (Pvt) Ltd · Rabi 2026-27 wheat Salam · working prototype</span><span>1 PAT = 1 kg Grade 1 wheat · Salam price Rs {fmt(state.pricing.price)} / 40 kg</span></div></footer>
@@ -77,7 +77,7 @@ function TopBar({ route, user, urPage }) {
   return (
     <header className="top">
       <div className="wrap">
-        <Link to={role === 'grower' ? '/grower' : role === 'ops' ? '/ops' : '/'} className="brand" dir="ltr"><img src="/img/logo.png" alt="" /><span><b>Barak</b> AgriTech</span></Link>
+        <Link to={role === 'grower' ? '/grower' : role === 'ops' ? '/ops' : '/'} className="brand" dir="ltr"><img src={asset('img/logo.png')} alt="" /><span><b>Barak</b> AgriTech</span></Link>
         <nav className="nav" aria-label="Main">{items.map(([to, l]) => <Link key={to} to={to} className={route === to ? 'on' : ''}>{l}</Link>)}</nav>
         <div style={{ flex: 1 }} />
         {urPage && (
@@ -117,6 +117,7 @@ function Dock() {
   const app = useAppSafe(); const { go } = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [arm, setArm] = useState(false);
   const isOps = app.user && app.user.role === 'ops';
   const as = async (phone, to) => {
     setBusy(true);
@@ -141,7 +142,7 @@ function Dock() {
           <div className="row" style={{ gap: 6 }}>
             {J.map(([l, d]) => <button key={d} disabled={busy || !isOps} onClick={() => jump(d)} style={app.clock.day === d ? { borderColor: 'oklch(0.72 0.15 138)' } : null}>{l}</button>)}
           </div>
-          {isOps && <button disabled={busy} onClick={async () => { if (confirm('Reset all demo data to the start of the season?')) { await api('/api/ops/reset', {}); app.refresh(); go('/'); } }}>Reset demo data</button>}
+          {isOps && <button disabled={busy} onClick={async () => { if (!arm) { setArm(true); setTimeout(() => setArm(false), 4000); return; } setArm(false); await api('/api/ops/reset', {}); app.refresh(); go('/'); }}>{arm ? 'Click again to reset everything' : 'Reset demo data'}</button>}
         </div>
       ) : <button className="pill" onClick={() => setOpen(true)}>Sandbox · <b>{app.clock.date}</b></button>}
     </div>

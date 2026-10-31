@@ -1,7 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 // ── api ──
+export const LOCAL = !!import.meta.env.VITE_LOCAL;
+export const asset = (p) => import.meta.env.BASE_URL + p.replace(/^\//, '');
 export async function api(url, body, method) {
+  if (LOCAL) { const { localApi } = await import('./local/api.js'); return localApi(url, body, method); }
   const r = await fetch(url, { method: method || (body ? 'POST' : 'GET'), headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin' });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error || 'Request failed');
@@ -11,15 +14,16 @@ export async function api(url, body, method) {
 // ── tiny router (history API) ──
 const RouterCtx = createContext(null);
 export function Router({ children }) {
-  const [path, setPath] = useState(location.pathname + location.search);
-  useEffect(() => { const f = () => setPath(location.pathname + location.search); addEventListener('popstate', f); return () => removeEventListener('popstate', f); }, []);
-  const go = useCallback((to) => { if (to !== location.pathname + location.search) { history.pushState(null, '', to); setPath(to); scrollTo(0, 0); } }, []);
+  // The browser-only build keeps the current page in memory: its host does not carry paths in the URL.
+  const [path, setPath] = useState(() => (LOCAL ? '/' : location.pathname + location.search));
+  useEffect(() => { if (LOCAL) return; const f = () => setPath(location.pathname + location.search); addEventListener('popstate', f); return () => removeEventListener('popstate', f); }, []);
+  const go = useCallback((to) => { setPath((p) => { if (to === p) return p; if (!LOCAL) history.pushState(null, '', to); scrollTo(0, 0); return to; }); }, []);
   return <RouterCtx.Provider value={{ path, go }}>{children}</RouterCtx.Provider>;
 }
 export const useRouter = () => useContext(RouterCtx);
 export function Link({ to, children, className, ...rest }) {
   const { go } = useRouter();
-  return <a href={to} className={className} onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); go(to); }} {...rest}>{children}</a>;
+  return <a href={LOCAL ? '#' : to} className={className} onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); go(to); }} {...rest}>{children}</a>;
 }
 
 // ── app state ──
@@ -45,7 +49,7 @@ export const rs = (x) => 'Rs ' + fmt(Math.round(x));
 export const pkr = (x) => 'PKR ' + fmt(Math.round(x));
 export const pct = (x, d = 1) => (x >= 0 ? '+' : '−') + Math.abs(x * 100).toFixed(d) + '%';
 export const lakh = (x) => (x >= 1e7 ? 'Rs ' + (x / 1e7).toFixed(2) + ' crore' : x >= 1e5 ? 'Rs ' + (x / 1e5).toFixed(x % 1e5 ? 1 : 0) + ' lakh' : rs(x));
-export const phOf = (n) => `/img/field${((n - 1) % 5) + 1}.jpg`;
+export const phOf = (n) => asset(`img/field${((n - 1) % 5) + 1}.jpg`);
 
 // ── small components ──
 export function FundBar({ paid, res = 0, mine = 0, label }) {
