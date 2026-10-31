@@ -24,7 +24,6 @@
   --shadow-lift: 0 0 0 1px var(--line), 0 6px 18px rgba(20, 60, 30, 0.08);
   --radius: 8px;
   --sans: "Inter", system-ui, sans-serif;
-  --serif: "Instrument Serif", Georgia, serif;
   --urdu: "Noto Nastaliq Urdu", "Noto Naskh Arabic", serif;
   color-scheme: light;
 }
@@ -64,7 +63,7 @@ a { color: var(--accent); }
 a:hover { color: var(--accent-strong); }
 h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -0.015em; }
 h1 { font-size: 34px; line-height: 1.12; }
-h1.display { font-family: var(--serif); font-weight: 400; font-size: 48px; letter-spacing: -0.01em; line-height: 1.05; }
+h1.display { font-size: 44px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.08; }
 h2 { font-size: 21px; line-height: 1.25; }
 h3 { font-size: 16px; }
 p { margin: 0; }
