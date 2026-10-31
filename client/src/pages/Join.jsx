@@ -50,7 +50,6 @@ export default function Join() {
             [t('Help through the season', 'پورے سیزن مدد'), t('Satellite checks on your field, a field officer, and a voice message before any heat wave.', 'سیٹلائٹ سے کھیت کی نگرانی، فیلڈ افسر، اور گرمی سے پہلے صوتی پیغام۔')],
             [t('Delivery made easy', 'آسان ترسیل'), t('One certified warehouse near your fields. Barak pays for the trolley.', 'قریب ایک منظور شدہ گودام۔ ٹرالی کا کرایہ بارک دے گا۔')]].map(([h, b]) => <div key={h} className="card"><b style={{ fontWeight: 500 }}>{h}</b><span className="small muted">{b}</span></div>)}
         </div>
-        <div className="card flat">{t(`How the price works, honestly: it is set about ${Math.round((1 - pricing.price / pricing.support) * 100)}% under the support price expected at harvest (Rs ${fmt(pricing.price)} against Rs ${fmt(pricing.support)}). That gap is what early money costs: you get cash in November, and investors carry the risk that prices fall.`, `سچ بات: قیمت کٹائی پر متوقع امدادی قیمت (Rs ${fmt(pricing.support)}) سے تقریباً ${Math.round((1 - pricing.price / pricing.support) * 100)}٪ کم رکھی جاتی ہے۔ یہ جلد رقم کی قیمت ہے۔ اپریل میں قیمت گرے تو نقصان سرمایہ کار کا ہے۔`)}</div>
       </section>
 
       <section className="card lift pad-l stack" style={{ maxWidth: 640 }}>
