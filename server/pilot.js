@@ -66,7 +66,9 @@ export function lotsUpTo(d) {
 export function pilot(d) {
   const delivered = lotsUpTo(d).filter((l) => l.accepted);
   const deliveredMd = delivered.reduce((s, l) => s + l.md, 0);
-  const blocks = BLOCKS.map((b) => { const c = blockCrop(b, d); return { ...b, ...c, sownDay: b.sown, sownDate: dateOf(b.sown), isSown: d >= b.sown, est: b.acres * c.perAc, estLo: b.acres * c.perAcLo, estHi: b.acres * c.perAcHi }; });
+  const blocks = BLOCKS.map((b) => { const c = blockCrop(b, d); const isSown = d >= b.sown;
+    const status = !isSown ? 'unsown' : c.harvested || d >= D.delivFrom ? 'harvested' : b.crop_event === 'rust' && d >= 96 && d < 112 ? (d >= 103 ? 'treated' : 'watch') : 'good';
+    return { ...b, ...c, sownDay: b.sown, sownDate: dateOf(b.sown), isSown, status, est: b.acres * c.perAc, estLo: b.acres * c.perAcLo, estHi: b.acres * c.perAcHi }; });
   const est = blocks.reduce((s, b) => s + b.est, 0), estLo = blocks.reduce((s, b) => s + b.estLo, 0), estHi = blocks.reduce((s, b) => s + b.estHi, 0);
   const receipt = kv('receipt'), surplus = kv('surplus_offer'), surplusDecision = kv('surplus_decision'), consent = kv('token_consent'), feedback = kv('feedback'), rofr = kv('rofr');
   const stage = d < D.buyerPaid ? 'proposal' : d < D.signed ? 'funded' : d < D.harvestNotice ? 'growing' : d < D.delivFrom ? 'harvest' : deliveredMd < P.md ? 'delivering' : d < D.buyerSettled ? 'delivered' : 'settled';
@@ -110,8 +112,16 @@ export function pilot(d) {
   const px = priceAt(d);
   const records = recordChain(ev.filter((x) => ['money', 'ok', 'sow'].includes(x.kind) || /signed/.test(x.title)));
   const tokens = tokenSim(d, est, deliveredMd);
+  const latest = ev.filter((x) => ['watch', 'report'].includes(x.kind) && !/^L-\d/.test(x.title)).sort((a, b) => b.day - a.day)[0];
+  const next = MILESTONES.find(([day, t]) => day > d && !(/deadline/.test(t) && deliveredMd >= P.md));
+  const nd = blocks.map((b) => b.ndvi).filter((x) => x != null && x > 0.2);
+  const crop = {
+    stage: cropStage(d), sownAcres: blocks.filter((b) => b.isSown).reduce((s, b) => s + b.acres, 0),
+    ndvi: nd.length ? +(nd.reduce((a, b) => a + b, 0) / nd.length).toFixed(2) : null,
+    latest: latest ? { date: latest.date, title: latest.title } : null, next: next ? { date: dateOf(next[0]), title: next[1] } : null,
+  };
   return {
-    ...P, stage, day: d, events: ev.sort((a, b) => b.day - a.day), blocks, est, estLo, estHi, cover: est / P.md, deliveredMd, lots: lotsUpTo(d), cash, records, tokens,
+    ...P, stage, day: d, events: ev.sort((a, b) => b.day - a.day), blocks, est, estLo, estHi, cover: est / P.md, deliveredMd, lots: lotsUpTo(d), cash, records, tokens, crop,
     balance: cash.reduce((s, c) => s + c.v, 0),
     market: { pmex: px, mill: P.millPrice, mtm: P.md * px - P.deliveryFee },
     receipt, surplus, surplusDecision, consent, feedback, rofr,
@@ -126,6 +136,15 @@ export function pilot(d) {
   };
 }
 const fmt = (x) => Math.round(x).toLocaleString('en-IN');
+
+// Growth stages for wheat sown in the first half of November in central Punjab.
+function cropStage(d) {
+  return d < D.sowFrom ? 'Before sowing' : d < D.sowTo + 7 ? 'Sowing and emergence' : d < 85 ? 'Tillering' : d < 110 ? 'Jointing' : d < 130 ? 'Heading'
+    : d < 155 ? 'Grain fill' : d < D.delivFrom ? 'Ripening' : d <= D.delivTo ? 'Harvest and delivery' : 'Harvested';
+}
+const MILESTONES = [[D.sowFrom, 'Sowing starts'], [D.sowTo + 2, 'All 400 acres sown and reported'], [30, 'First crop report'], [61, 'January crop report'], [92, 'February crop report'],
+  [120, 'March crop report'], [151, 'April crop report'], [D.harvestNotice, 'Harvest notice, 7 days ahead'], [D.delivFrom, 'Deliveries start at the mill gate'], [180, 'Delivery deadline for all 8,000 maunds'],
+  [D.millPaid, 'Mill pays for the wheat'], [D.buyerSettled, 'You are paid']];
 
 // Physical Salam until PVARA approval: no tokens, but each milestone is a hash-chained record.
 function recordChain(evs) {

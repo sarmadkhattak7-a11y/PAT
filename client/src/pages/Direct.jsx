@@ -45,8 +45,9 @@ function Docs({ p }) {
 
 // Token simulation until PVARA approval: nothing is issued; shows the pilot as PAT would record it.
 const TX = { mint: ['info', 'Mint'], unlock: ['ok', 'Delivered'], burn: ['done', 'Retired'], hold: ['watch', 'No change'], close: ['done', 'Closed'] };
-export function TokenSim({ t, day, staff }) {
+export function TokenSim({ t, day, staff, consent }) {
   const [all, setAll] = useState(false);
+  const a = useAction();
   const status = t.minted === 0 ? 'Not minted yet' : t.outstanding === 0 ? 'All retired' : t.burned ? 'Delivery under way' : 'Locked until delivery';
   const sign = (x) => (x.type === 'mint' ? '+' + fmt(x.pat) : x.type === 'burn' ? '−' + fmt(x.pat) : x.pat ? fmt(x.pat) : '–');
   const rows = all ? t.tx : t.tx.slice(0, 6);
@@ -55,6 +56,8 @@ export function TokenSim({ t, day, staff }) {
       <div className="between"><h2>Your PAT tokens</h2><Tag k="watch">Simulation</Tag></div>
       <span className="small">{t.minted === 0 ? `${fmt(t.planned)} PAT to be minted on ${t.mintDate}` : `${fmt(t.outstanding)} PAT held · ${status.toLowerCase()}`}{t.burned ? ` · ${fmt(t.burned)} retired` : ''}</span>
       <span className="xs faint">Not issued until PVARA approval; the signed Season Schedule is the legal record. 1 PAT = 1 kg.</span>
+      {consent !== undefined && <label className="row xs" style={{ gap: 8 }}><input type="checkbox" checked={!!(consent && consent.yes)} onChange={(e) => a.run(() => api('/api/pilot/consent', { yes: e.target.checked }), 'Saved')} /> Issue my contract as real PAT once PVARA approves (Wakalah 9.2)</label>}
+      <Err e={a.error} />
       {t.tx.length > 0 && (
         <details className="small">
           <summary style={{ cursor: 'pointer', color: 'var(--accent)' }}>Token records ({t.tx.length})</summary>
@@ -94,6 +97,48 @@ export function TokenSim({ t, day, staff }) {
   );
 }
 
+// The buyer's crop card: one headline that changes with the season, the eight blocks at a glance, what happened
+// last and what comes next, and a way into LIMS for the satellite and scouting detail.
+export const LIMS_URL = 'https://limspakistan.com';
+const BLK = { good: ['var(--ok-bg)', 'var(--ok-fg)', 'Healthy'], watch: ['var(--watch-bg)', 'var(--watch-fg)', 'Check'], treated: ['var(--watch-bg)', 'var(--watch-fg)', 'Sprayed'], harvested: ['var(--info-bg)', 'var(--info-fg)', 'Cut'], unsown: ['transparent', 'var(--faint)', 'Not sown'] };
+function CropCard({ p }) {
+  const c = p.crop, owed = p.md, done = p.deliveredMd >= owed;
+  const ok = p.lots.filter((l) => l.accepted).length, rej = p.lots.length - ok;
+  let big, sub, fill = null, legend = null, tag = null;
+  if (p.deliveredMd > 0) { big = `${fmt(p.deliveredMd)} md`; sub = done ? 'delivered in full at the mill gate, Haveli Lakha' : `delivered of ${fmt(owed)} at the mill gate, Haveli Lakha`; fill = p.deliveredMd / owed; legend = [`${ok} lots accepted`, rej ? `${rej} rejected for moisture, brought back` : '']; tag = done ? ['ok', 'Delivered'] : ['info', 'Delivering']; }
+  else if (c.sownAcres === 0) { big = 'Not sown yet'; sub = `Sowing window ${p.dates.sowFrom} to 20 Nov`; }
+  else if (c.sownAcres < p.acres) { big = `${c.sownAcres} of ${p.acres} acres`; sub = 'sown and reported so far'; fill = c.sownAcres / p.acres; }
+  else if (p.day < 30) { big = `${p.acres} acres sown`; sub = 'First crop estimate on 1 Dec'; }
+  else { big = `≈ ${fmt(p.est)} md`; sub = Math.round(p.estLo) === Math.round(p.estHi) ? 'expected harvest, final estimate before cutting' : `expected harvest, ${fmt(p.estLo)} to ${fmt(p.estHi)}`; fill = owed / p.est; legend = [`${fmt(owed)} md owed to you`, `≈ ${fmt(p.est - owed)} md the grower keeps`]; tag = ['ok', `${p.cover.toFixed(1)}× cover`]; }
+  const Row = ({ l, children }) => <div className="small" style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr)', gap: 12, alignItems: 'baseline' }}><span className="muted">{l}</span><span style={{ textAlign: 'end' }}>{children}</span></div>;
+  return (
+    <div className="card lift pad-l stack-s">
+      <div className="between"><div className="kicker">Crop and delivery · {c.stage}</div>{tag && <Tag k={tag[0]}>{tag[1]}</Tag>}</div>
+      <div><div className="huge">{big}</div><span className="small muted">{sub}</span></div>
+      {fill != null && <div style={{ height: 8, borderRadius: 4, background: 'var(--bar-track)', overflow: 'hidden' }}><div style={{ width: Math.min(100, fill * 100) + '%', height: '100%', background: 'var(--bar-paid)' }} /></div>}
+      {legend && <div className="between xs muted"><span>{legend[0]}</span><span>{legend[1]}</span></div>}
+      {c.sownAcres > 0 && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6, marginTop: 4 }}>
+            {p.blocks.map((b) => { const [bg, fg, word] = BLK[b.status]; return (
+              <div key={b.id} title={`${b.id}: ${word}${b.ndvi ? ', NDVI ' + b.ndvi : ''}`} style={{ background: bg, color: fg, borderRadius: 6, padding: '6px 8px', boxShadow: b.status === 'unsown' ? 'inset 0 0 0 1px var(--line)' : 'none' }}>
+                <div className="xs" style={{ fontWeight: 600 }}>{b.id.replace('Block ', '')}</div>
+                <div className="xs">{b.status === 'good' && p.day >= 30 ? `${Math.round(b.perAc)} md/ac` : word}</div>
+              </div>); })}
+          </div>
+          <span className="xs faint">Eight 50-acre blocks{c.ndvi ? ` · average crop health (NDVI) ${c.ndvi}` : ''}</span>
+        </>
+      )}
+      <hr className="rule" />
+      {c.latest && <Row l="Latest from the field">{c.latest.title}<div className="xs faint">{c.latest.date}</div></Row>}
+      {c.next && <Row l="Next">{c.next.title}<div className="xs faint">{c.next.date}</div></Row>}
+      {!done && <Row l="If the crop falls short">Later delivery or the price refunded, no profit. Not insured this season.</Row>}
+      <a className="btn block" href={LIMS_URL} target="_blank" rel="noopener noreferrer" style={{ marginTop: 4 }}>Open LIMS crop monitoring ↗</a>
+      <span className="xs faint" style={{ textAlign: 'center' }}>Satellite imagery, weather and field scouting for the 400 acres come from LIMS, Barak's monitoring partner.</span>
+    </div>
+  );
+}
+
 export function DirectPortfolio({ p }) {
   const a = useAction();
   const [rating, setRating] = useState(5), [text, setText] = useState('');
@@ -119,17 +164,7 @@ export function DirectPortfolio({ p }) {
             <div className="card"><Stat v={settled ? crore(p.net) : crore(p.net)} l={settled ? 'paid to you' : 'expected back'} sub={`profit ${crore(p.profit)} · ${(p.profit / (p.dueAtSigning + p.deliveryFee) * 100).toFixed(1)}% on all-in Rs ${fmt(p.allInMd)}/md`} /></div>
           </div>
         </div>
-        <div className="card lift pad-l stack-s">
-          <div className="kicker">Crop and delivery</div>
-          {p.deliveredMd > 0 ? <><div className="huge">{fmt(p.deliveredMd)} md</div><span className="small muted">delivered of {fmt(p.md)} at the mill gate, Haveli Lakha</span></>
-            : <><div className="huge">{p.est > 0 && p.day >= 30 ? p.cover.toFixed(2) + '×' : '–'}</div><span className="small muted">{p.day >= 30 ? `cover: estimated ${fmt(p.est)} maunds (${fmt(p.estLo)} to ${fmt(p.estHi)}) against ${fmt(p.md)} owed` : 'Crop estimates start after emergence (first report 1 Dec).'}</span></>}
-          <hr className="rule" />
-          <div className="between small"><span className="muted">Crop insurance</span><span>Not in place this season</span></div>
-          <div className="between small"><span className="muted">If the crop falls short</span><span>Later delivery or price refunded, no profit</span></div>
-          <div className="between small"><span className="muted">Token</span><span>Simulated until PVARA approval (below)</span></div>
-          <label className="row small" style={{ gap: 8, marginTop: 6 }}><input type="checkbox" checked={!!(p.consent && p.consent.yes)} onChange={(e) => a.run(() => api('/api/pilot/consent', { yes: e.target.checked }), 'Saved')} /> Record my contract as PAT tokens once PVARA approves (Wakalah 9.2)</label>
-          <Err e={a.error} />
-        </div>
+        <CropCard p={p} />
       </section>
 
       {p.lots.length > 0 && <section className="card stack-s"><div className="between"><h2>Delivery receipts</h2><span className="small muted">Weighed, sampled and tested at the mill gate; title passes to you, then the lot is sold to the mill</span></div><Lots lots={p.lots} /></section>}
@@ -143,7 +178,7 @@ export function DirectPortfolio({ p }) {
             <div className="between small"><b style={{ fontWeight: 500 }}>Held for you now</b><b style={{ fontWeight: 500 }}>{rs(p.balance)}</b></div>
             <span className="xs faint">Held in the Barak client account at Bank Alfalah, separate from Barak's own money. Profit shown before tax; your withholding certificate comes with the statement.</span>
           </div>
-          <TokenSim t={p.tokens} day={p.day} />
+          <TokenSim t={p.tokens} day={p.day} consent={p.consent || null} />
           <div className="card stack-s"><h2>Documents</h2><Docs p={p} /></div>
           <div className="card stack-s"><h2>Risks still open</h2>{p.risks.map((r) => <span key={r} className="small">• {r}</span>)}</div>
           {settled && (
