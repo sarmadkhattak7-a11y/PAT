@@ -50,6 +50,25 @@ export function TokenSim({ t, day, staff }) {
   const status = t.minted === 0 ? 'Not minted yet' : t.outstanding === 0 ? 'All retired' : t.burned ? 'Delivery under way' : 'Locked until delivery';
   const sign = (x) => (x.type === 'mint' ? '+' + fmt(x.pat) : x.type === 'burn' ? '−' + fmt(x.pat) : x.pat ? fmt(x.pat) : '–');
   const rows = all ? t.tx : t.tx.slice(0, 6);
+  if (!staff) return (
+    <div className="card stack-s">
+      <div className="between"><h2>Your PAT tokens</h2><Tag k="watch">Simulation</Tag></div>
+      <span className="small">{t.minted === 0 ? `${fmt(t.planned)} PAT to be minted on ${t.mintDate}` : `${fmt(t.outstanding)} PAT held · ${status.toLowerCase()}`}{t.burned ? ` · ${fmt(t.burned)} retired` : ''}</span>
+      <span className="xs faint">Not issued until PVARA approval; the signed Season Schedule is the legal record. 1 PAT = 1 kg.</span>
+      {t.tx.length > 0 && (
+        <details className="small">
+          <summary style={{ cursor: 'pointer', color: 'var(--accent)' }}>Token records ({t.tx.length})</summary>
+          {t.tx.map((x) => (
+            <div key={x.seq} className="between xs" style={{ gap: 8, padding: '6px 0', borderBottom: '1px solid var(--divider)' }}>
+              <span><span className="faint">{x.date}</span> · {TX[x.type][1]}<div className="hash">{x.hash.slice(0, 16)}…</div></span>
+              <span style={{ whiteSpace: 'nowrap' }}>{sign(x)}</span>
+            </div>
+          ))}
+          <div className="xs faint" style={{ marginTop: 6 }}>Series {t.series} · wallet KS-0001</div>
+        </details>
+      )}
+    </div>
+  );
   return (
     <section className="card stack-s">
       <div className="between"><h2>{staff ? 'Token simulation' : 'Your PAT tokens'}</h2><Tag k="watch">Simulation · not issued</Tag></div>
@@ -113,8 +132,6 @@ export function DirectPortfolio({ p }) {
         </div>
       </section>
 
-      <TokenSim t={p.tokens} day={p.day} />
-
       {p.lots.length > 0 && <section className="card stack-s"><div className="between"><h2>Delivery receipts</h2><span className="small muted">Weighed, sampled and tested at the mill gate; title passes to you, then the lot is sold to the mill</span></div><Lots lots={p.lots} /></section>}
 
       <section className="grid g2" style={{ alignItems: 'start' }}>
@@ -126,6 +143,7 @@ export function DirectPortfolio({ p }) {
             <div className="between small"><b style={{ fontWeight: 500 }}>Held for you now</b><b style={{ fontWeight: 500 }}>{rs(p.balance)}</b></div>
             <span className="xs faint">Held in the Barak client account at Bank Alfalah, separate from Barak's own money. Profit shown before tax; your withholding certificate comes with the statement.</span>
           </div>
+          <TokenSim t={p.tokens} day={p.day} />
           <div className="card stack-s"><h2>Documents</h2><Docs p={p} /></div>
           <div className="card stack-s"><h2>Risks still open</h2>{p.risks.map((r) => <span key={r} className="small">• {r}</span>)}</div>
           {settled && (
