@@ -211,7 +211,7 @@ export function ledger() {
     events: events.reverse(), valid, minted, burned, shortfall: short, outstanding: minted - burned - short, locked, unlocked,
     reserve: { owedKg: sum(perField, (p) => p.owedKg), ewrKg: Math.max(0, ewrKg), locked, unlocked, fields: perField, asOf: dateOf(d) },
     supply: supplySeries(events.slice().reverse()),
-    pilot: { ref: pl.ref, records: pl.records.slice().reverse(), note: 'Physical Salam until PVARA approval: milestones are recorded, no tokens are issued.' },
+    pilot: { ref: pl.ref, records: pl.records.slice().reverse(), tokens: pl.tokens, note: 'Physical Salam until PVARA approval: milestones are recorded and tokens are simulated, not issued.' },
   };
 }
 function supplySeries(evts) {

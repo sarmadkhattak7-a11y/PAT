@@ -106,8 +106,9 @@ export function pilot(d) {
   ].filter((c) => c[0] <= d).map(([day, t, v]) => ({ day, date: dateOf(day), t, v }));
   const px = priceAt(d);
   const records = recordChain(ev.filter((x) => ['money', 'ok', 'sow'].includes(x.kind) || /signed/.test(x.title)));
+  const tokens = tokenSim(d, est, deliveredMd);
   return {
-    ...P, stage, day: d, events: ev.sort((a, b) => b.day - a.day), blocks, est, estLo, estHi, cover: est / P.md, deliveredMd, lots: lotsUpTo(d), cash, records,
+    ...P, stage, day: d, events: ev.sort((a, b) => b.day - a.day), blocks, est, estLo, estHi, cover: est / P.md, deliveredMd, lots: lotsUpTo(d), cash, records, tokens,
     balance: cash.reduce((s, c) => s + c.v, 0),
     market: { pmex: px, mill: P.millPrice, mtm: P.md * px - P.deliveryFee },
     receipt, surplus, surplusDecision, consent, feedback, rofr,
@@ -127,4 +128,34 @@ const fmt = (x) => Math.round(x).toLocaleString('en-IN');
 function recordChain(evs) {
   let prev = '0'.repeat(64);
   return evs.slice().sort((a, b) => a.day - b.day).map((x, i) => { const hash = sha(prev + '|' + x.day + '|' + x.title); const r = { seq: i + 1, date: x.date, title: x.title, prev, hash }; prev = hash; return r; });
+}
+
+// Token simulation until PVARA approval. Nothing is issued: this replays the pilot as PAT would record it
+// (1 PAT = 1 kg), so the buyer and Ops can see the token flow before it is switched on. Minted to the buyer's
+// custodial wallet when the contract is signed and paid, locked while the wheat is owed, retired lot by lot
+// as accepted wheat is sold to the mill at the gate. A rejected lot moves nothing.
+export const TOKEN = { series: 'PAT-D-2627-001', wallet: 'KS-0001 (custodial, held by Barak for Kashif Shabbir)', kgPerMd: 40 };
+function tokenSim(d, estMd, deliveredMd) {
+  const tx = [];
+  const add = (day, type, pat, note) => { if (day <= d) tx.push({ day, date: dateOf(day), type, pat, note }); };
+  add(D.signed, 'mint', P.md * TOKEN.kgPerMd, `Season Schedule signed and Rs ${fmt(P.total)} paid to Wattoo Agri Farming. Minted to wallet KS-0001 and locked: Salam goods cannot be sold before delivery.`);
+  lotsUpTo(d).forEach((l) => {
+    if (!l.accepted) return add(l.day, 'hold', 0, `${l.lot} rejected at ${l.moisture}% moisture. No tokens move until it is redelivered.`);
+    add(l.day, 'unlock', l.kg, `${l.lot}: ${fmt(l.kg)} kg weighed in at the mill gate (slip ${l.slip}). These PAT are now backed by delivered wheat.`);
+    add(l.day, 'burn', l.kg, `${l.lot} sold to the mill at Rs ${fmt(P.millPrice)} a maund (Rs ${(P.millPrice / TOKEN.kgPerMd).toFixed(2)} a kg). Tokens retired.`);
+  });
+  add(D.buyerSettled, 'close', 0, `Rs ${fmt(P.net)} paid to Kashif Shabbir. Series closed with no tokens outstanding.`);
+  let prev = '0'.repeat(64), minted = 0, burned = 0;
+  const chain = tx.map((t, i) => {
+    if (t.type === 'mint') minted += t.pat; if (t.type === 'burn') burned += t.pat;
+    const hash = sha([prev, i + 1, t.day, t.type, t.pat].join('|'));
+    const r = { seq: i + 1, ...t, outstanding: minted - burned, prev, hash }; prev = hash; return r;
+  });
+  const outstanding = minted - burned, inFieldKg = Math.max(0, estMd - deliveredMd) * TOKEN.kgPerMd;
+  return {
+    ...TOKEN, simulated: true, planned: P.md * TOKEN.kgPerMd, minted, burned, outstanding, mintDate: dateOf(D.signed),
+    value: outstanding / TOKEN.kgPerMd * P.millPrice,
+    reserve: { owedKg: P.md * TOKEN.kgPerMd - deliveredMd * TOKEN.kgPerMd, inFieldKg, cover: outstanding ? inFieldKg / outstanding : null },
+    tx: chain.reverse(),
+  };
 }

@@ -52,6 +52,7 @@ export default function Ledger() {
       </section>
       <section className="card stack-s">
         <div className="between"><h2>Pilot contract records · {data.pilot.ref}</h2><span className="small muted">{data.pilot.note}</span></div>
+        {data.pilot.tokens && <div className="between small" style={{ gap: 12, flexWrap: 'wrap' }}><span><Tag k="watch">Simulation · not issued</Tag> <span style={{ marginInlineStart: 6 }}>Series {data.pilot.tokens.series}</span></span><span className="muted">{data.pilot.tokens.minted ? `${fmt(data.pilot.tokens.minted)} PAT minted · ${fmt(data.pilot.tokens.outstanding)} outstanding · ${fmt(data.pilot.tokens.burned)} retired` : `Mints on ${data.pilot.tokens.mintDate}`}</span></div>}
         {!data.pilot.records.length && <p className="muted small">No records yet.</p>}
         {data.pilot.records.slice(0, 12).map((r) => <div key={r.seq} className="ev"><span className="xs faint">#{r.seq} · {r.date}</span><span className="small">{r.title}<div className="hash">{r.hash}</div></span><span /></div>)}
       </section>

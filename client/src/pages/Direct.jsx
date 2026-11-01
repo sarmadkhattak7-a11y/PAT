@@ -43,6 +43,38 @@ function Docs({ p }) {
   return <div className="stack-s">{rows.map(([t, day]) => <div key={t} className="between small" style={{ borderBottom: '1px solid var(--divider)', padding: '6px 0' }}><span>{t}</span>{day != null && d >= day ? <Tag k="ok">On file</Tag> : <Tag k="done">Pending</Tag>}</div>)}</div>;
 }
 
+// Token simulation until PVARA approval: nothing is issued; shows the pilot as PAT would record it.
+const TX = { mint: ['info', 'Mint'], unlock: ['ok', 'Delivered'], burn: ['done', 'Retired'], hold: ['watch', 'No change'], close: ['done', 'Closed'] };
+export function TokenSim({ t, day, staff }) {
+  const [all, setAll] = useState(false);
+  const status = t.minted === 0 ? 'Not minted yet' : t.outstanding === 0 ? 'All retired' : t.burned ? 'Delivery under way' : 'Locked until delivery';
+  const sign = (x) => (x.type === 'mint' ? '+' + fmt(x.pat) : x.type === 'burn' ? '−' + fmt(x.pat) : x.pat ? fmt(x.pat) : '–');
+  const rows = all ? t.tx : t.tx.slice(0, 6);
+  return (
+    <section className="card stack-s">
+      <div className="between"><h2>{staff ? 'Token simulation' : 'Your PAT tokens'}</h2><Tag k="watch">Simulation · not issued</Tag></div>
+      <span className="small muted">How this contract will appear as PAT once PVARA approves (1 PAT = 1 kg of wheat). No tokens exist yet: until then this is a physical Salam and the signed Season Schedule is the legal record.</span>
+      {t.minted === 0 ? <p className="small">{fmt(t.planned)} PAT would be minted to {staff ? "Kashif Shabbir's" : 'your'} wallet on {t.mintDate}, when the grower signs and is paid.</p> : (
+        <div className="grid g3">
+          <Stat v={fmt(t.outstanding)} l={staff ? 'PAT outstanding' : 'PAT held'} sub={status} />
+          <Stat v={fmt(t.burned)} l="PAT retired" sub="as wheat is sold to the mill" />
+          {t.outstanding ? <Stat v={crore(t.value)} l="value at the mill price" sub="Rs 112.50 a kg" /> : <Stat v={crore(t.burned / 40 * 4500)} l="sold to the mill" sub="Rs 112.50 a kg, before the 3.5% fee" />}
+        </div>
+      )}
+      {t.outstanding > 0 && <div className="between small" style={{ gap: 12 }}><span className="muted">Backing</span><span style={{ textAlign: 'end' }}>{day >= 30 ? `${fmt(t.reserve.inFieldKg)} kg estimated still in the field · ${t.reserve.cover.toFixed(2)}× the PAT outstanding` : 'Grower\'s Salam obligation; crop estimates start 1 Dec'}</span></div>}
+      {rows.map((x) => (
+        <div key={x.seq} className="ev">
+          <span className="xs faint">#{x.seq} · {x.date}</span>
+          <span className="small"><Tag k={TX[x.type][0]}>{TX[x.type][1]}</Tag><div className="xs muted" style={{ marginTop: 4 }}>{x.note}</div><div className="hash">{staff ? x.hash : x.hash.slice(0, 24) + '…'}</div></span>
+          <span className="small" style={{ whiteSpace: 'nowrap' }}>{sign(x)}</span>
+        </div>
+      ))}
+      {t.tx.length > 6 && <button className="btn small" style={{ alignSelf: 'flex-start' }} onClick={() => setAll(!all)}>{all ? 'Show fewer' : `Show all ${t.tx.length} records`}</button>}
+      <span className="xs faint">Series {t.series} · wallet {t.wallet} · hash-chained like the live PAT ledger</span>
+    </section>
+  );
+}
+
 export function DirectPortfolio({ p }) {
   const a = useAction();
   const [rating, setRating] = useState(5), [text, setText] = useState('');
@@ -75,11 +107,13 @@ export function DirectPortfolio({ p }) {
           <hr className="rule" />
           <div className="between small"><span className="muted">Crop insurance</span><span>Not in place this season</span></div>
           <div className="between small"><span className="muted">If the crop falls short</span><span>Later delivery or price refunded, no profit</span></div>
-          <div className="between small"><span className="muted">Token</span><span>Physical Salam until PVARA approval</span></div>
+          <div className="between small"><span className="muted">Token</span><span>Simulated until PVARA approval (below)</span></div>
           <label className="row small" style={{ gap: 8, marginTop: 6 }}><input type="checkbox" checked={!!(p.consent && p.consent.yes)} onChange={(e) => a.run(() => api('/api/pilot/consent', { yes: e.target.checked }), 'Saved')} /> Record my contract as PAT tokens once PVARA approves (Wakalah 9.2)</label>
           <Err e={a.error} />
         </div>
       </section>
+
+      <TokenSim t={p.tokens} day={p.day} />
 
       {p.lots.length > 0 && <section className="card stack-s"><div className="between"><h2>Delivery receipts</h2><span className="small muted">Weighed, sampled and tested at the mill gate; title passes to you, then the lot is sold to the mill</span></div><Lots lots={p.lots} /></section>}
 
@@ -188,9 +222,10 @@ export function DirectControl({ p }) {
       </section>
       <section className="card stack-s"><div className="between"><h2>Monitored blocks</h2><span className="small muted">Estimated {fmt(p.est)} md ({fmt(p.estLo)}–{fmt(p.estHi)}) · {p.day >= 30 ? p.cover.toFixed(2) + '× cover' : 'before emergence'}</span></div><Blocks blocks={p.blocks} /></section>
       <section className="card stack-s"><h2>Delivery lots</h2><Lots lots={p.lots} /></section>
+      <TokenSim t={p.tokens} day={p.day} staff />
       <section className="grid g2" style={{ alignItems: 'start' }}>
         <div className="card stack-s"><h2>Timeline</h2><Timeline events={p.events} limit={60} /></div>
-        <div className="card stack-s"><h2>Ledger records</h2><span className="small muted">Physical Salam until PVARA approval: milestones are hash-chained, no tokens issued.</span>
+        <div className="card stack-s"><h2>Ledger records</h2><span className="small muted">Physical Salam until PVARA approval: milestones are hash-chained; tokens are simulated above, not issued.</span>
           {p.records.slice().reverse().map((r) => <div key={r.seq} className="ev"><span className="xs faint">#{r.seq} · {r.date}</span><span className="small">{r.title}<div className="hash">{r.hash.slice(0, 32)}…</div></span><span /></div>)}</div>
       </section>
     </div>

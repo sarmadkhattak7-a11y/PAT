@@ -55,7 +55,7 @@ Run as a **Barak Direct** contract, a second channel next to the retail marketpl
 - 7 days' harvest notice; nine lots to the mill gate at Haveli Lakha (option A), one rejected for 11.4% moisture and redelivered.
 - Each lot sold to the mill at the Rs 4,500 undertaking. Mill pays Rs 3,60,00,000; Kashif receives Rs 3,50,76,000 after the 3.5% delivery fee. Profit Rs 78,16,000, 27.7% on the all-in cost of Rs 3,523 a maund. Guarantee and cheque returned; pilot review meeting.
 - Interactive along the way: Asim confirms receipt, offers surplus and confirms Rabi 2027-28 interest. Ops buys or passes the surplus. Kashif gives tokenisation consent (Wakalah 9.2) and pilot feedback.
-- No tokens are issued (physical Salam until PVARA approval); milestones are hash-chained records in Control.
+- No tokens are issued (physical Salam until PVARA approval); milestones are hash-chained records in Control. A token simulation replays the contract as PAT (320,000 minted to the buyer's custodial wallet at signing, locked, retired lot by lot as wheat is sold to the mill), clearly labelled as not issued, for Kashif and in Control.
 
 Yields are simulated around 32 maunds an acre to match the proposal's 1.6× cover. Block names, vehicle numbers and lot details are illustrative until real Schedule 2 and Schedule 4 data exist.
 

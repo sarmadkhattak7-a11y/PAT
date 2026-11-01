@@ -215,6 +215,14 @@ test('the Wattoo and Kashif Shabbir pilot runs from proposal to settlement', asy
   await kashif.post('/api/pilot/feedback', { rating: 5, text: 'Clear reporting.' });
   const L = await ops.get('/api/ledger');
   assert.ok(L.pilot.records.length >= 10);
+  // Simulated tokens: 320,000 PAT minted at signing, all retired by delivery, nothing left outstanding.
+  const T = k.direct.tokens;
+  assert.equal(T.simulated, true);
+  assert.equal(T.minted, 320000);
+  assert.equal(T.burned, 320000);
+  assert.equal(T.outstanding, 0);
+  assert.equal(T.tx.filter((x) => x.type === 'hold').length, 1);
+  assert.equal(L.pilot.tokens.outstanding, 0);
 });
 
 test('sandbox autopilot takes a new investor from reservation to payout', async () => {
