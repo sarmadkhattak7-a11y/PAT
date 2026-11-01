@@ -31,7 +31,7 @@ export default function Join() {
           <div className="between"><span>{t('Usual yield, maund per acre', 'عام پیداوار، من فی ایکڑ')}</span>{step(yld, setYld, 21, 60, t('Yield', 'پیداوار'))}</div>
           <hr className="rule" />
           <span className="muted">{t('Paid to you by 10 Nov', '10 نومبر تک آپ کو ملیں گے')}</span>
-          <div className="huge en" dir="ltr" style={{ textAlign: ur ? 'right' : 'left' }}>PKR {fmt(owed * pricing.price)}</div>
+          <div className="huge en" dir="ltr" style={{ textAlign: ur ? 'right' : 'left' }}>Rs {fmt(owed * pricing.price)}</div>
           <div className="grid g2">
             <div className="card flat"><span className="small muted">{t('You deliver by 30 Apr', '30 اپریل تک دینی ہے')}</span><span>{N(fmt(owed))} {t('maund', 'من')}</span></div>
             <div className="card flat" style={{ background: 'var(--accent-soft)' }}><span className="small muted">{t('Stays yours to sell', 'باقی آپ کی اپنی')}</span><span>{t('about', 'تقریباً')} {N(fmt(acres * (yld - 20)))} {t('maund', 'من')}</span></div>

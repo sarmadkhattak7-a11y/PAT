@@ -6,7 +6,7 @@ Three products on one backend:
 - **Barak Kisan** (`/grower`, `/join`): phone-first, Urdu-first grower app: sign the Salam contract, confirm payment, report sowing, field advice, delivery slots, surplus offers, grower record.
 - **Barak Control** (`/control`): staff console: exceptions, contracts, the Rabi 2026-27 pilot desk, crop monitor, token ledger, grower pipeline, escrow reconciliation, audit log.
 
-The Rabi 2026-27 pilot (Wattoo Agri Farming → Kashif Shabbir, 8,000 maunds at Rs 3,300) runs as a Barak Direct contract from the close to settlement. See `docs/JOURNEY-REVIEW.md` for the farmer and investor journey review behind this build.
+The Rabi 2026-27 pilot (Wattoo Agri Farming → Kashif Shabbir, 8,000 maunds at Rs 3,300) runs as a Barak Direct contract from the close to settlement. See `docs/JOURNEY-REVIEW.md` for the farmer and investor journey review behind this build, and `docs/DEMO-SCRIPT.md` for a 15-minute presentation walk-through.
 
 A working version of the "Barak AgriTech Prototype v3" design. Every action is real server-side state (SQLite), not a simulation slider: investors sign up, verify, reserve and pay into escrow; Ops closes the market, forms contracts, releases advances and mints PAT; growers decide on smaller contracts, book delivery and report problems; the warehouse intake unlocks tokens; sales burn them and pay holders.
 

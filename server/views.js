@@ -30,7 +30,7 @@ export function publicUser(u) {
 }
 
 export function pricing() {
-  return { ...PR, K, scenarios: [['Stress (2024 repeat)', PR.stress], ['Low', PR.low], ['Support price', PR.support], ['Barak estimate', PR.ref], ['High', PR.high]].map(([label, px]) => ({ label, px, ret: netPerKg(px) / RS - 1 })) };
+  return { ...PR, K, scenarios: [['Stress (2024 repeat)', PR.stress], ['Low', PR.low], ['At the support price', PR.support], ['September estimate', PR.ref], ['High', PR.high]].map(([label, px]) => ({ label, px, ret: netPerKg(px) / RS - 1 })) };
 }
 
 export function market(user) {
@@ -54,7 +54,26 @@ function fieldName(id) { const f = fieldRow(id); return f ? f.grower : id; }
 
 export function inbox(user) {
   const d = today();
-  return all('SELECT * FROM notifications WHERE user_id = ? AND day <= ? ORDER BY day DESC, id DESC LIMIT 100', user.id, d).map((n) => ({ ...n, date: dateOf(n.day), date_ur: dateOf(n.day, 'ur') }));
+  const rows = all('SELECT * FROM notifications WHERE user_id = ? AND day <= ? ORDER BY day DESC, id DESC LIMIT 200', user.id, d);
+  // Same-day token events across many growers read as one message, so the inbox stays readable at scale.
+  const groups = [[/ delivered in full$/, /Your ([\d,]+) PAT/, (n, pat) => [`${n} growers delivered in full`, `${pat} of your PAT are unlocked and backed by graded wheat in the certified warehouse.`]],
+    [/ signed and was paid$/, /([\d,]+) PAT minted/, (n, pat) => [`${n} growers signed and were paid`, `${pat} PAT minted to you, locked until the wheat is delivered in April.`]]];
+  const out = [];
+  rows.forEach((n) => {
+    const g = n.kind === 'token' && groups.find(([re]) => re.test(n.title));
+    if (!g) return out.push(n);
+    const prev = out.find((x) => x.day === n.day && x.group === g);
+    if (prev) { prev.members.push(n); return; }
+    out.push({ ...n, group: g, members: [n] });
+  });
+  return out.slice(0, 100).map(({ group, members, ...n }) => {
+    if (group && members.length > 2) {
+      const pat = members.reduce((s, m) => s + Number(((m.body.match(group[1]) || [])[1] || '0').replace(/,/g, '')), 0);
+      const [title, body] = group[2](members.length, pat.toLocaleString('en-IN'));
+      n = { ...n, title, body: body + ' ' + members.map((m) => m.title.replace(group[0], '')).join(', ') + '.', read: members.every((m) => m.read) ? 1 : 0 };
+    } else if (group && members.length > 1) return members.map((m) => ({ ...m, date: dateOf(m.day), date_ur: dateOf(m.day, 'ur') }));
+    return { ...n, date: dateOf(n.day), date_ur: dateOf(n.day, 'ur') };
+  }).flat();
 }
 
 // Season updates for an investor's holdings: one line per milestone across all their growers, flagging the ones to watch.
@@ -71,7 +90,7 @@ function updatesFor(fieldIds, d, userId) {
   fs.filter((f) => f.crop_event === 'blight' && d >= 84).forEach((f) => out.push({ day: 84, date: dateOf(84), t: `${f.grower}: crop under stress`, b: 'Crop health fell below nearby fields. A field officer visited and the grower is treating it. Delivery is still the grower\'s obligation.', k: 'watch' }));
   fs.filter((f) => f.crop_event === 'irrigation' && d >= 112).forEach((f) => out.push({ day: 112, date: dateOf(112), t: `${f.grower}: water stress`, b: 'Tubewell breakdown during jointing. Irrigation restored; estimate lowered.', k: 'watch' }));
   const lotsIn = fs.map((f) => get("SELECT MAX(day) AS day FROM deliveries WHERE field_id = ? AND grade != 'Rejected'", f.id).day).filter((x) => x != null && x <= d);
-  if (lotsIn.length) { const done = fs.filter((f) => ['delivered', 'settled'].includes(f.status)).length; out.push({ day: Math.max(...lotsIn), date: dateOf(Math.max(...lotsIn)), t: 'Deliveries', b: `${done} of ${fs.length} growers delivered in full to the certified warehouse.${fs.some((f) => f.resolution === 'refund') ? ' Missing wheat from ' + fs.filter((f) => f.resolution === 'refund').map((f) => f.grower).join(', ') + ' was settled by refunding its price.' : ''}`, k: done === fs.length ? 'ok' : 'watch' }); }
+  if (lotsIn.length) { const done = fs.filter((f) => ['delivered', 'settled'].includes(f.status) && (f.resolution || 'full') === 'full').length; out.push({ day: Math.max(...lotsIn), date: dateOf(Math.max(...lotsIn)), t: 'Deliveries', b: `${done} of ${fs.length} growers delivered in full to the certified warehouse.${fs.some((f) => f.status === 'short') ? ' Still due: ' + fs.filter((f) => f.status === 'short').map((f) => f.grower).join(', ') + '.' : ''}${fs.some((f) => f.resolution === 'refund') ? ' Missing wheat from ' + fs.filter((f) => f.resolution === 'refund').map((f) => f.grower).join(', ') + ' was settled by refunding its price.' : ''}`, k: done === fs.length ? 'ok' : 'watch' }); }
   all('SELECT * FROM payouts WHERE user_id = ? AND day <= ?', userId, d).forEach((p) => out.push({ day: p.day, date: dateOf(p.day), t: p.win === 'apr' ? 'Sold at the April sale' : p.win === 'early' ? 'Sold early at your request' : 'Sold at the September sale', b: `${p.pat.toLocaleString('en-IN')} PAT at Rs ${Math.round(p.price).toLocaleString('en-IN')} per 40 kg. Net Rs ${Math.round(p.net).toLocaleString('en-IN')} sent to your bank.`, k: 'ok' }));
   return out.sort((a, b) => b.day - a.day);
 }
@@ -116,7 +135,7 @@ export function portfolio(user) {
     realised,
     direct: user.segment === 'direct' ? directView(d) : null,
     value: valuePat ? { pat: valuePat, cost, markNow: s(px), price: px, retNow: cost ? s(px) / cost - 1 : 0,
-      scenarios: [['If 2024 repeats', PR.stress], ['Low', PR.low], ['Support price', PR.support], ['Barak estimate', PR.ref], ['High', PR.high]].map(([label, p]) => ({ label, px: p, value: s(p), ret: cost ? s(p) / cost - 1 : 0 })),
+      scenarios: [['If 2024 repeats', PR.stress], ['Low', PR.low], ['At the support price', PR.support], ['September estimate', PR.ref], ['High', PR.high]].map(([label, p]) => ({ label, px: p, value: s(p), ret: cost ? s(p) / cost - 1 : 0 })),
       breakeven: PR.breakeven, sep: sale(valuePat, 'sep', PR.ref, user.filer !== 0), apr: sale(valuePat, 'apr', Math.max(px, PR.support), user.filer !== 0),
       early: (() => { const e = sale(valuePat, 'apr', px, user.filer !== 0); const share = Math.max(0, Math.min(1, (d - DAY.deliverBy) / (DAY.settle - DAY.deliverBy))); e.storage = e.md * PR.carry * share; e.net -= e.storage; return e; })() } : null,
   };
@@ -155,8 +174,8 @@ export function grower(user) {
   return {
     field: { ...l, status: f.status, acresContracted: f.acres_contracted, owedMd: f.acres_contracted * PR.owedMdPerAcre, advance: f.acres_contracted * PR.owedMdPerAcre * PR.price, offerAcres: f.offer_acres,
       offerAdvance: f.offer_acres ? f.offer_acres * PR.owedMdPerAcre * PR.price : null, decision: f.decision, deliveryDay: f.delivery_day,
-      signedDay: f.signed_day, signedDate: f.signed_day != null ? dateOf(f.signed_day) : null, paidDate: f.paid_day != null ? dateOf(f.paid_day) : null, receiptDate: f.receipt_day != null ? dateOf(f.receipt_day) : null,
-      payoutMethod: f.payout_method, payoutAccount: f.payout_account, payoutLabel: payoutLabel(f), sownDate: f.sown_day != null ? dateOf(f.sown_day) : null,
+      signedDay: f.signed_day, signedDate: f.signed_day != null ? dateOf(f.signed_day) : null, signedDateUr: f.signed_day != null ? dateOf(f.signed_day, 'ur') : null, paidDate: f.paid_day != null ? dateOf(f.paid_day) : null, paidDateUr: f.paid_day != null ? dateOf(f.paid_day, 'ur') : null, receiptDate: f.receipt_day != null ? dateOf(f.receipt_day) : null,
+      payoutMethod: f.payout_method, payoutAccount: f.payout_account, payoutLabel: payoutLabel(f), sownDate: f.sown_day != null ? dateOf(f.sown_day) : null, sownDateUr: f.sown_day != null ? dateOf(f.sown_day, 'ur') : null,
       deliveredKg: deliveredKg(f.id), shortfallKg: f.shortfall_kg, extension: f.extension_until != null ? dateOf(f.extension_until) : null, resolution: f.resolution },
     crop: { ...c, stage: stageAt(d), advice: advice(f, d, med, th).map((a) => ({ ...a, done: done[a.k] || null })), weather: weather(d), checked: dateOf(d - (d % 5)) },
     payments: all("SELECT * FROM cash WHERE field_id = ? AND type IN ('release','surplus')", f.id).map((p) => ({ ...p, amount: -p.amount, date: dateOf(p.day) })),
@@ -207,7 +226,7 @@ export function ledger() {
   const ewrKg = sum(perField.filter((p) => !p.locked && p.ewr), (p) => p.deliveredKg - sum(events.filter((e) => e.type === 'burn' && e.field_id === p.id), (e) => e.pat));
   const pl = pilot(d);
   return {
-    token: { name: 'Pakistan Agri Token', symbol: 'PAT', series: 'PAT-2728', unit: '1 PAT = 1 kg Grade 1 wheat', network: 'Barak ledger (hash-chained). Hedera anchoring follows PVARA approval.' },
+    token: { name: 'Pakistan Agri Token', symbol: 'PAT', series: 'PAT-2627', unit: '1 PAT = 1 kg Grade 1 wheat', network: 'Barak ledger (hash-chained). Hedera anchoring follows PVARA approval.' },
     events: events.reverse(), valid, minted, burned, shortfall: short, outstanding: minted - burned - short, locked, unlocked,
     reserve: { owedKg: sum(perField, (p) => p.owedKg), ewrKg: Math.max(0, ewrKg), locked, unlocked, fields: perField, asOf: dateOf(d) },
     supply: supplySeries(events.slice().reverse()),

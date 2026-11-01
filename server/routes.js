@@ -188,8 +188,8 @@ r('POST', '/api/ops/reset', O, (ctx) => { seed(); ctx.logout(); });
 
 // Every change is written to the audit log: who, when, what. Codes and account numbers are masked.
 function audit(ctx, path, body) {
-  const u = ctx.user || (path === '/api/auth/verify' ? get('SELECT * FROM users WHERE phone = ?', normPhone(body.phone)) : null);
-  const safe = Object.fromEntries(Object.entries(body || {}).map(([k, v]) => [k, /code|cnic|iban|account/i.test(k) ? '•••' : v]));
+  const u = (path === '/api/auth/verify' ? get('SELECT * FROM users WHERE phone = ?', normPhone(body.phone)) : null) || ctx.user;
+  const safe = Object.fromEntries(Object.entries(body || {}).map(([k, v]) => [k, /code|cnic|iban|account/i.test(k) ? '•••' : /phone/i.test(k) && typeof v === 'string' ? v.replace(/\D/g, '').replace(/^(\d{4})\d+(\d{3})$/, '$1•••$2') : v]));
   run('INSERT INTO audit (day, ts, user_id, actor, role, action, detail) VALUES (?, ?, ?, ?, ?, ?, ?)', today(), Date.now(), u ? u.id : null, u ? u.name : 'Visitor', u ? u.role : 'public', path.replace('/api/', ''), JSON.stringify(safe).slice(0, 300));
 }
 

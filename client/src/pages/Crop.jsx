@@ -22,7 +22,7 @@ export default function Crop() {
   return (
     <div className="stack-l">
       <div className="between">
-        <div className="stack-s"><div className="kicker">Barak Crop Monitoring</div><h1>{data.stage.en} · {clock.date}</h1><span className="small muted">Sentinel-2 indices every 5 days, weather and soil. {data.median != null ? `Area median NDVI ${data.median}.` : 'Crop checks start after germination (late November).'}</span></div>
+        <div className="stack-s"><div className="kicker">Barak Crop Monitoring</div><h1>{data.stage.en} · {clock.date}</h1><span className="small muted">Sentinel-2 indices every 5 days through LIMS, with weather and soil. {data.median != null ? `Area median NDVI ${data.median}.` : 'Crop checks start after germination (late November).'}</span></div>
         <div className="chips" role="group" aria-label="Map layer">{[['ndvi', 'Crop health (NDVI)'], ['ndmi', 'Moisture (NDMI)'], ['risk', 'Delivery risk']].map(([k, l]) => <button key={k} className="chip" aria-pressed={layer === k} onClick={() => setLayer(k)}>{l}</button>)}</div>
       </div>
       <section className="split">
@@ -48,7 +48,7 @@ export default function Crop() {
           <div className="between"><h2>{f.grower}</h2>{f.active ? <Tag k={f.risk}>{f.cov.toFixed(2)}× coverage</Tag> : <Tag k="done">Not contracted</Tag>}</div>
           <span className="small muted">{f.id} · {f.village} · {f.acres} acres · {f.status}</span>
           <div className="grid g3">
-            <Stat v={f.ndvi ?? '–'} l="NDVI" /><Stat v={f.ndre ?? '–'} l="NDRE" /><Stat v={f.ndmi ?? '–'} l="NDMI" />
+            <Stat v={f.ndvi != null ? f.ndvi.toFixed(2) : '–'} l="NDVI" /><Stat v={f.ndre != null ? f.ndre.toFixed(2) : '–'} l="NDRE" /><Stat v={f.ndmi != null ? f.ndmi.toFixed(2) : '–'} l="NDMI" />
           </div>
           <div className="grid g2">
             <Stat v={fmt(f.est) + ' md'} l={`estimated (${fmt(f.estLo)}–${fmt(f.estHi)})`} />
@@ -66,7 +66,7 @@ export default function Crop() {
         <div className="scroll-x"><table className="tbl">
           <thead><tr><th>Grower</th><th>Village</th><th className="r">NDVI</th><th className="r">Est. md/acre</th><th className="r">Coverage</th><th>Top advice</th></tr></thead>
           <tbody>{data.fields.map((x, i) => (
-            <tr key={x.id} className="click" onClick={() => setSel(i)}><td>{x.grower}</td><td className="small muted">{x.village}</td><td className="r">{x.ndvi ?? '–'}</td><td className="r">{x.perAc.toFixed(1)}</td>
+            <tr key={x.id} className="click" onClick={() => setSel(i)}><td>{x.grower}</td><td className="small muted">{x.village}</td><td className="r">{x.ndvi != null ? x.ndvi.toFixed(2) : '–'}</td><td className="r">{x.perAc.toFixed(1)}</td>
               <td className="r">{x.active ? <Tag k={x.risk}>{x.cov.toFixed(2)}×</Tag> : '–'}</td><td className="small">{x.advice[0] ? x.advice[0].en[0] : '–'}</td></tr>
           ))}</tbody>
         </table></div>

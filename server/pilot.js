@@ -3,7 +3,7 @@
 // the Master Salam Agreement and Wakalah drafts, the Chairman Update (24 Oct) and the mill-delivery briefing (30 Oct).
 // The season plays out from the clock; the few choices people make (receipt, surplus offer, consents) are stored.
 import { get, all, run, sha } from './db.js';
-import { dateOf, priceAt, cropAt } from './domain.js';
+import { dateOf, priceAt, cropAt, stageAt } from './domain.js';
 
 export const P = {
   ref: 'BRK-D-2627-001', season: 'Rabi 2026-27 (pilot)',
@@ -13,7 +13,7 @@ export const P = {
   arrangePct: 0.025, monitorPerAcre: 500, deliveryPct: 0.035,
   millPrice: 4500, mill: 'Flour mill near Haveli Lakha, Okara',
   account: 'Barak client account, Bank Alfalah (held for the buyer)',
-  deliveryPoint: 'Mill gate, Haveli Lakha (option A, recommended to the board)',
+  deliveryPoint: 'Mill gate, Haveli Lakha',
   spec: 'Wheat of the Rabi 2026-27 crop: sound, dry, clean, fit for human consumption (Schedule 3; limits aligned with Punjab Food Department 2027 specification)',
   insured: false, tokenised: false,
 };
@@ -139,8 +139,7 @@ const fmt = (x) => Math.round(x).toLocaleString('en-IN');
 
 // Growth stages for wheat sown in the first half of November in central Punjab.
 function cropStage(d) {
-  return d < D.sowFrom ? 'Before sowing' : d < D.sowTo + 7 ? 'Sowing and emergence' : d < 85 ? 'Tillering' : d < 110 ? 'Jointing' : d < 130 ? 'Heading'
-    : d < 155 ? 'Grain fill' : d < D.delivFrom ? 'Ripening' : d <= D.delivTo ? 'Harvest and delivery' : 'Harvested';
+  return d < D.sowFrom ? 'Before sowing' : d < D.sowTo ? 'Sowing' : d >= D.delivFrom ? (d <= D.delivTo ? 'Harvest and delivery' : 'Harvested') : stageAt(d).en;
 }
 const MILESTONES = [[D.sowFrom, 'Sowing starts'], [D.sowTo + 2, 'All 400 acres sown and reported'], [30, 'First crop report'], [61, 'January crop report'], [92, 'February crop report'],
   [120, 'March crop report'], [151, 'April crop report'], [D.harvestNotice, 'Harvest notice, 7 days ahead'], [D.delivFrom, 'Deliveries start at the mill gate'], [180, 'Delivery deadline for all 8,000 maunds'],

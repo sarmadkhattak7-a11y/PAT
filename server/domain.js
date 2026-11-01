@@ -73,7 +73,7 @@ export function phaseAt(day) { return PHASES.find((p) => day >= p.s && day < p.e
 
 // Wheat price path, Rs per 40 kg, by week. Oct 2026 mandi about Rs 4,350; dips toward support at harvest; Rs 4,600 by September.
 // Oct 2026 mandi about Rs 4,350; dips at harvest (government buying unconfirmed); rises to the Rs 4,875 September estimate.
-const PK = [[-5, 4320], [0, 4350], [10, 4380], [19, 4420], [23, 4250], [30, 4420], [40, 4700], [47, 4875]];
+const PK = [[-5, 4320], [0, 4350], [10, 4380], [19, 4420], [23, 4440], [26, 4480], [30, 4540], [40, 4720], [47, 4875]];
 export function priceAt(day) {
   const w = day / 7;
   if (w <= PK[0][0]) return PK[0][1];
@@ -100,7 +100,7 @@ export const netPerKg = (px) => (px * (1 - PR.fee) - PR.carry) / PR.unitKg;
 export const STAGES = [
   { k: 'presow', s: -99, e: 0, en: 'Before sowing', ur: 'بوائی سے پہلے' },
   { k: 'sow', s: 0, e: 3, en: 'Sowing', ur: 'بوائی' }, { k: 'emerge', s: 3, e: 5, en: 'Emergence', ur: 'اگاؤ' },
-  { k: 'tiller', s: 5, e: 10, en: 'Tillering', ur: 'شاخیں' }, { k: 'joint', s: 10, e: 14, en: 'Jointing', ur: 'گانٹھ' },
+  { k: 'tiller', s: 5, e: 11, en: 'Tillering', ur: 'شاخیں' }, { k: 'joint', s: 11, e: 14, en: 'Jointing', ur: 'گانٹھ' },
   { k: 'boot', s: 14, e: 16, en: 'Booting', ur: 'گوبھ' }, { k: 'head', s: 16, e: 18, en: 'Heading', ur: 'سٹہ' },
   { k: 'fill', s: 18, e: 22, en: 'Grain fill', ur: 'دانہ بھرنا' }, { k: 'mature', s: 22, e: 99, en: 'Maturity', ur: 'پکائی' },
 ];

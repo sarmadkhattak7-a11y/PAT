@@ -6,7 +6,7 @@ const STAGE = {
   proposal: ['Proposal stage', 'watch'], funded: ['Paid in · contract signs 10 Nov', 'info'], growing: ['Contract signed · crop growing', 'ok'],
   harvest: ['Harvest notice given', 'info'], delivering: ['Delivering to the mill', 'info'], delivered: ['Delivered · waiting for mill payment', 'ok'], settled: ['Settled', 'done'],
 };
-export const crore = (x) => (Math.abs(x) >= 1e7 ? 'Rs ' + (x / 1e7).toFixed(2) + ' crore' : 'Rs ' + (x / 1e5).toFixed(2) + ' lakh');
+export const crore = (x) => (!Math.round(x) ? 'Rs 0' : Math.abs(x) >= 1e7 ? 'Rs ' + (x / 1e7).toFixed(2) + ' crore' : 'Rs ' + (x / 1e5).toFixed(2) + ' lakh');
 
 export function Timeline({ events, limit = 40 }) {
   return (
@@ -159,9 +159,16 @@ export function DirectPortfolio({ p }) {
             </div>
           )}
           <div className="grid g3">
-            <div className="card"><Stat v={crore(p.dueAtSigning)} l="paid in at signing" sub="price, 2.5% fee, monitoring" /></div>
+            <div className="card"><Stat v={crore(p.dueAtSigning)} l={p.day >= p.D.buyerPaid ? 'paid in' : `to pay by ${p.dates.buyerPaid}`} sub="price, 2.5% fee, monitoring" /></div>
             <div className="card"><Stat v={'Rs ' + fmt(p.millPrice)} l="mill undertaking, a maund" sub={`today's PMEX Rs ${fmt(p.market.pmex)}`} /></div>
             <div className="card"><Stat v={settled ? crore(p.net) : crore(p.net)} l={settled ? 'paid to you' : 'expected back'} sub={`profit ${crore(p.profit)} · ${(p.profit / (p.dueAtSigning + p.deliveryFee) * 100).toFixed(1)}% on all-in Rs ${fmt(p.allInMd)}/md`} /></div>
+          </div>
+          <div className="card stack-s">
+            <div className="kicker">Key dates</div>
+            {[['You pay into the client account', p.dates.buyerPaid, p.D.buyerPaid], ['Grower signs and is paid in full', p.dates.signed, p.D.signed], ['Crop reports from LIMS, monthly', 'Dec to Apr', 151],
+              ['Delivery to the mill gate', '1 to 30 Apr 2027', p.D.delivTo], ['Mill pays Rs 4,500 a maund', p.dates.millPaid, p.D.millPaid], ['You receive the proceeds', p.dates.buyerSettled, p.D.buyerSettled]].map(([t, date, day]) => (
+              <div key={t} className="between small" style={{ gap: 12, color: p.day >= day ? 'var(--muted)' : 'var(--text)' }}><span>{p.day >= day ? '✓ ' : ''}{t}</span><span style={{ whiteSpace: 'nowrap' }}>{date}</span></div>
+            ))}
           </div>
         </div>
         <CropCard p={p} />
@@ -250,8 +257,8 @@ export function DirectControl({ p }) {
     <div className="stack-l">
       <div className="between"><div className="stack-s"><div className="kicker">Pilot · Barak Direct · {p.ref}</div><h1>Wattoo Agri Farming → Kashif Shabbir</h1><span className="small muted">{fmt(p.md)} maunds · {p.acres} acres, {p.district} · Rs {fmt(p.price)} a maund · {p.deliveryPoint}</span></div><Tag k={STAGE[p.stage][1]}>{STAGE[p.stage][0]}</Tag></div>
       <section className="grid g4">
-        <div className="card"><Stat v={crore(p.dueAtSigning)} l="buyer paid in" /></div>
-        <div className="card"><Stat v={crore(p.total)} l="price to grower" sub={p.dates.signed} /></div>
+        <div className="card"><Stat v={crore(p.dueAtSigning)} l={p.day >= p.D.buyerPaid ? 'buyer paid in' : 'due from the buyer'} sub={p.dates.buyerPaid} /></div>
+        <div className="card"><Stat v={crore(p.total)} l={p.day >= p.D.signed ? 'price paid to grower' : 'price due to grower'} sub={p.dates.signed} /></div>
         <div className="card"><Stat v={crore(p.arrange + p.deliveryFee)} l="Barak fees" sub={`LIMS ${crore(p.monitor)}`} /></div>
         <div className="card"><Stat v={crore(p.balance)} l="client account balance" /></div>
       </section>

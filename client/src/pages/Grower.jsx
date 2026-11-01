@@ -90,7 +90,7 @@ function NextStep({ data, t }) {
     t('Your field stayed under the line, so no contract was formed and you owe nothing. You are offered first for Rabi 2027-28.', 'کوئی معاہدہ نہیں ہوا اور آپ پر کچھ واجب نہیں۔ ربیع 2027-28 میں آپ کو پہلا موقع ملے گا۔'), <NextSeason data={data} t={t} a={a} />);
   if (f.status === 'ahead') return box(t('Your field is going ahead', 'آپ کا کھیت منظور ہو گیا'), t('Barak is counting the money. Your contract will be ready to sign in a day or two.', 'بارک رقم کا حساب کر رہا ہے۔ ایک دو دن میں معاہدہ دستخط کے لیے تیار ہو گا۔'));
   if (f.status === 'contracted') return box(f.signedDate ? t('Signed. Payment is being sent today', 'دستخط ہو گئے۔ آج ادائیگی بھیجی جا رہی ہے') : t('Sign your Salam contract', 'اپنے سلم معاہدے پر دستخط کریں'),
-    f.signedDate ? t(`Signed on ${f.signedDate}. Under Salam the full price is paid when the contract is made.`, `${f.signedDate} کو دستخط ہوئے۔ سلم میں پوری قیمت معاہدے کے وقت ادا ہوتی ہے۔`) : t('Read the terms below. When you sign, the full price is paid to you the same day.', 'نیچے شرائط پڑھیں۔ دستخط کے دن ہی پوری قیمت آپ کو مل جائے گی۔'),
+    f.signedDate ? t(`Signed on ${f.signedDate}. Under Salam the full price is paid when the contract is made.`, `${f.signedDateUr || f.signedDate} کو دستخط ہوئے۔ سلم میں پوری قیمت معاہدے کے وقت ادا ہوتی ہے۔`) : t('Read the terms below. When you sign, the full price is paid to you the same day.', 'نیچے شرائط پڑھیں۔ دستخط کے دن ہی پوری قیمت آپ کو مل جائے گی۔'),
     !f.signedDate && <>
       <div className="card flat stack-s small">
         {[[t('You sell', 'آپ بیچتے ہیں'), `${fmt(f.owedMd)} ${t('maund of Grade 1 wheat', 'من درجہ 1 گندم')}`], [t('You are paid now', 'ابھی ادائیگی'), 'Rs ' + fmt(f.advance)], [t('You deliver', 'ترسیل'), t(`by ${clock.dates.deliverBy} to the certified warehouse`, `${clock.dates_ur.deliverBy} تک منظور شدہ گودام`)], [t('If your crop falls short', 'اگر فصل کم ہو'), t('deliver later or from another source, or return the price for the missing part. No interest, no penalty to Barak.', 'بعد میں یا کسی اور ذریعے سے دیں، یا کمی کی قیمت واپس کریں۔ نہ سود، نہ جرمانہ۔')], [t('Your land', 'آپ کی زمین'), t('is never security for this contract.', 'اس معاہدے کی ضمانت نہیں۔')]].map(([k, v]) => <div key={k} className="between" style={{ gap: 12 }}><span className="muted">{k}</span><span style={{ textAlign: 'end' }}>{v}</span></div>)}
@@ -104,11 +104,11 @@ function NextStep({ data, t }) {
       <span className="small faint">{t('Prefer paper? Your field officer can sign with you with a thumbprint and a witness.', 'کاغذ پر؟ فیلڈ افسر انگوٹھے اور گواہ کے ساتھ دستخط کروا سکتے ہیں۔')}</span>
     </>);
   if (f.status === 'paid' && !f.receiptDate) return box(t(`Did you receive Rs ${fmt(f.advance)}?`, `کیا آپ کو ${fmt(f.advance)} روپے ملے؟`),
-    t(`Sent on ${f.paidDate} to ${f.payoutLabel}. Confirm so your receipt is on record.`, `${f.paidDate} کو ${f.payoutLabel} پر بھیجے گئے۔ تصدیق کریں۔`),
+    t(`Sent on ${f.paidDate} to ${f.payoutLabel}. Confirm so your receipt is on record.`, `${f.paidDateUr || f.paidDate} کو ${f.payoutLabel} پر بھیجے گئے۔ تصدیق کریں۔`),
     <><button className="btn primary" disabled={a.busy} onClick={() => a.run(() => api('/api/grower/receipt', {}), t('Thank you. Receipt recorded.', 'شکریہ۔ رسید درج۔'))}>{t('Yes, I received it', 'ہاں، مل گئے')}</button>
       <button className="btn" onClick={() => a.run(() => api('/api/grower/report', { type: 'Payment', text: 'Payment not received' }), t('Your field officer will call you today.', 'فیلڈ افسر آج کال کریں گے۔'))}>{t('Not yet', 'ابھی نہیں')}</button></>);
   if (f.status === 'paid' && d < 150) return box(!f.sownDate ? t('Sow and tell us', 'بوائی کریں اور بتائیں') : t('Grow your wheat', 'اپنی گندم اگائیں'),
-    !f.sownDate ? t(`Sow by ${clock.dates.sowBy} for the best yield. Tap once you have sown so monitoring starts on the right day.`, `بہترین پیداوار کے لیے ${clock.dates_ur.sowBy} تک بوائی کریں۔ بوائی کے بعد بتائیں۔`) : t(`Sown on ${f.sownDate}. Advice for your field is on the Field tab; we send a voice message before any heat wave.`, `${f.sownDate} کو بوائی۔ مشورے کھیت والے حصے میں ہیں۔`),
+    !f.sownDate ? t(`Sow by ${clock.dates.sowBy} for the best yield. Tap once you have sown so monitoring starts on the right day.`, `بہترین پیداوار کے لیے ${clock.dates_ur.sowBy} تک بوائی کریں۔ بوائی کے بعد بتائیں۔`) : t(`Sown on ${f.sownDate}. Advice for your field is on the Field tab; we send a voice message before any heat wave.`, `${f.sownDateUr || f.sownDate} کو بوائی ہوئی۔ مشورے کھیت والے حصے میں ہیں۔`),
     !f.sownDate && <button className="btn primary" disabled={a.busy} onClick={() => a.run(() => api('/api/grower/sown', {}), t('Sowing recorded', 'بوائی درج'))}>{t('I have sown my wheat', 'میں نے بوائی کر لی')}</button>);
   if (f.status === 'paid') return box(t('Book your delivery day', 'ترسیل کا دن بُک کریں'),
     t(`Deliver ${fmt(f.owedMd)} maund to the certified warehouse by ${clock.dates.deliverBy}. Three trolleys a day, so no long queue. Barak pays the trolley fare.`, `${fmt(f.owedMd)} من ${clock.dates_ur.deliverBy} تک گودام پہنچائیں۔ روزانہ تین ٹرالیاں، لمبی قطار نہیں۔ کرایہ بارک دے گا۔`),
@@ -159,7 +159,7 @@ function Score({ s, t }) {
   if (!s.of) return null;
   return (
     <section className="card stack-s">
-      <div className="between"><h2>{t('Your grower record', 'آپ کا ریکارڈ')}</h2><Tag k={s.tier === 'Gold' ? 'ok' : s.tier === 'Silver' ? 'info' : 'watch'}>{s.tier} · {s.points}/{s.of}</Tag></div>
+      <div className="between"><h2>{t('Your grower record', 'آپ کا ریکارڈ')}</h2><Tag k={s.tier === 'Gold' ? 'ok' : s.tier === 'Silver' ? 'info' : 'watch'}>{t(s.tier, { Gold: 'گولڈ', Silver: 'سلور', Building: 'بن رہا ہے' }[s.tier] || s.tier)} · {t(`${s.points} of ${s.of} done`, `${s.of} میں سے ${s.points}`)}</Tag></div>
       {s.items.filter((i) => i.due).map((i) => <div key={i.t} className="check"><span className={'b' + (i.ok ? ' on' : '')}>{i.ok ? '✓' : ''}</span><span>{t(i.t, i.t_ur)}</span></div>)}
       <span className="small faint">{t('A good record means first place next season, a larger contract, and a history you can show a bank.', 'اچھا ریکارڈ: اگلے سیزن پہلا موقع، بڑا معاہدہ، اور بینک کو دکھانے کے لیے تاریخ۔')}</span>
     </section>

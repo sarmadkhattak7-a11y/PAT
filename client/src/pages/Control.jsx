@@ -14,7 +14,7 @@ export default function Control({ route }) {
   if (!user || user.role !== 'ops') return (
     <div className="wrap" style={{ paddingTop: 48 }}><div className="card lift pad-l" style={{ maxWidth: 460, margin: '0 auto' }}>
       <div className="brand" dir="ltr" style={{ marginBottom: 8 }}><img src={asset('img/logo.png')} alt="" /><span><b>Barak</b> Control</span></div>
-      <LoginForm title="Staff sign in" /><hr className="rule" /><p className="small muted">Demo staff account: 0300 0000001. Or use Sandbox → Ops desk.</p>
+      <LoginForm title="Staff sign in" /><hr className="rule" /><p className="small muted">Sandbox staff account: 0300 0000001. Or use Sandbox → Ops desk.</p>
     </div></div>
   );
   const S = [['overview', 'Overview', data ? data.exceptions.filter((e) => e.level !== 'info').length : 0], ['contracts', 'Contracts'], ['pilot', 'Pilot · Direct'], ['crop', 'Crop monitor'], ['ledger', 'Token ledger'], ['growers', 'Growers'], ['money', 'Money'], ['audit', 'Audit log']];
@@ -64,7 +64,7 @@ function Overview({ data }) {
   };
   return (
     <div className="stack-l">
-      <div className="stack-s"><div className="kicker">Barak Control · {pricing.season}</div><h1>{clock.date} · {clock.phaseLabel}</h1><span className="muted small">Market: {data.market} · {data.investors.real} retail investors, {data.investors.direct} Direct buyer, {data.investors.simulated} simulated</span></div>
+      <div className="stack-s"><div className="kicker">Barak Control · {pricing.season}</div><h1>{clock.date} · {clock.phaseLabel}</h1><span className="muted small">Market: {data.market} · {data.investors.real} retail investor{data.investors.real === 1 ? '' : 's'}, {data.investors.direct} Direct buyer{data.investors.direct === 1 ? '' : 's'}, {data.investors.simulated} simulated</span></div>
       <Err e={a.error} />
       <section className="grid g4">
         <div className="card"><Stat v={lakh(C.deposits)} l="Paid in by investors" sub={C.treasury ? 'plus ' + lakh(C.treasury) + ' Barak treasury' : null} /></div>
@@ -88,7 +88,7 @@ function Overview({ data }) {
           <span className="small muted">Estimated yield ÷ maunds owed, marketplace contracts</span>
           <div className="huge">{cov.cov.toFixed(2)}×</div>
           <div className="grid g2">
-            <Stat v={fmt(cov.est) + ' md'} l={`estimated (${fmt(cov.lo)}–${fmt(cov.hi)})`} />
+            <Stat v={fmt(cov.est) + ' md'} l={Math.round(cov.lo) === Math.round(cov.hi) ? 'estimated, final before cutting' : `estimated (${fmt(cov.lo)}–${fmt(cov.hi)})`} />
             <Stat v={fmt(cov.owed) + ' md'} l="owed under contract" />
             <Stat v={fmt(cov.shortfall) + ' md'} l="worst-case shortfall" />
             <Stat v={`${cov.watch} watch · ${cov.risk} risk`} l={`below ${data.thresholds.watch}× / ${data.thresholds.risk}×`} />
@@ -135,7 +135,7 @@ function Growers({ data }) {
       <section className="card stack-s">
         <h2>Registrations for Rabi 2027-28</h2>
         <span className="small muted">New → field check → verified (grade set) → pre-approved. Returning growers who delivered on time come in pre-approved.</span>
-        {!data.registrations.length && <p className="muted small">None yet. Growers register at <Link to="/join">/join</Link> or re-enrol from Barak Kisan.</p>}
+        {!data.registrations.length && <p className="muted small">None yet. Growers register on the <Link to="/join">Barak Kisan sign-up page</Link> or re-enrol from the app.</p>}
         {data.registrations.map((r) => {
           const i = PIPE.indexOf(r.status), next = PIPE[i + 1];
           return <div key={r.id} className="between small" style={{ borderBottom: '1px solid var(--divider)', padding: '8px 0' }}><span>{r.name} · {r.phone}<div className="xs faint">{r.village} · {r.acres} acres{r.yield ? ' · ' + r.yield + ' md/acre' : ''} · {r.date}</div></span>

@@ -93,7 +93,7 @@ function KeyFacts() {
         {R('Barak fees', `2.5% at purchase (in the Rs ${P.kgCost.toFixed(2)} per kg you pay). 3.5% of sale proceeds when sold. Storage Rs ${P.carry} a maund if you hold to September.`)}
         {R('When you get money back', `April (at harvest) or September (after storage), your choice by ${clock.dates.electBy}. After delivery you can also sell early at that day's price.`)}
         {R('Lock-up', `From ${clock.dates.close} until the wheat is delivered in April. Salam wheat cannot be resold before delivery.`)}
-        {R('Change your mind', `Cancel an unpaid reservation any time. Withdraw a paid order for a full refund until two days before the close.`)}
+        {R('Change your mind', `Cancel an unpaid reservation any time. Withdraw a paid order for a full refund until ${clock.dates.withdrawBy}.`)}
         {R('If a field does not raise 80%', `No contract is formed; your money is refunded in full by ${clock.dates.refund}.`)}
         {R('If wheat is not delivered', `The grower delivers later (up to 30 days) or refunds the price with no profit added; Barak returns its fee on that part.`)}
         {R('Main risk', `Wheat prices. Below Rs ${fmt(P.breakeven)} per 40 kg you get back less than you paid. A 2024-style crash (Rs ${fmt(P.stress)}) would mean a loss of about ${Math.abs(Math.round(P.stressRet * 100))}%.`)}
@@ -131,13 +131,13 @@ function Confirm({ spec, user, onReserved }) {
         <tbody>{q.alloc.map((x) => <tr key={x.field}><td>{byId[x.field].grower}<div className="xs faint">{byId[x.field].village}</div></td><td className="r">{rs(x.amount)}</td><td className="r">{fmt(x.pat)}</td><td className="r">{Math.round(byId[x.field].paidFrac * 100)}%</td></tr>)}</tbody>
         <tfoot><tr><td><b style={{ fontWeight: 500 }}>Total</b></td><td className="r"><b style={{ fontWeight: 500 }}>{rs(q.placed)}</b></td><td className="r"><b style={{ fontWeight: 500 }}>{fmt(pat)}</b></td><td /></tr></tfoot>
       </table></div>
-      {q.split && <div className="note">One investor can hold at most 20% of a field, so the rest is spread across more Grade A fields.</div>}
+      {q.split && <div className="note">One investor can hold at most 20% of a field, so the rest is spread across more A-rated fields.</div>}
       {q.short > 250 && <div className="note">{rs(q.short)} did not fit in the room left on these fields.</div>}
       <ul className="small muted" style={{ margin: 0, paddingInlineStart: 18 }}>
-        <li>Price: Rs {pricing.kgCost.toFixed(4)} per PAT (Rs {fmt(pricing.price)} per 40 kg to the grower, plus 2.5% Barak fee).</li>
+        <li>Price: Rs {pricing.kgCost.toFixed(2)} per PAT (Rs {fmt(pricing.price)} per 40 kg to the grower, plus 2.5% Barak fee). Amounts are rounded down to whole PAT.</li>
         <li>Pay within 24 hours or the reservation lapses. Money is held in escrow at the bank.</li>
         <li>Fields under 80% paid on {clock.dates.close} do not go ahead; that part is refunded by {clock.dates.refund}.</li>
-        <li>This is a Shariah-compliant Salam purchase, not a deposit. You can lose money if wheat prices fall.</li>
+        <li>This is a Salam purchase under AAOIFI Shariah Standard 10, not a deposit. You can lose money if wheat prices fall.</li>
       </ul>
       <Err e={a.error} />
       <button className="btn primary" disabled={a.busy || q.placed < 25000} onClick={async () => { const r = await a.run(() => api('/api/orders', { ...spec, amount })); if (r) onReserved(r.order); }}>Reserve {pkr(q.placed)}</button>
@@ -155,8 +155,8 @@ function Pay({ order, onPaid }) {
       <h2>Pay {pkr(order.amount)} into escrow</h2>
       <div className="chips" role="group" aria-label="Payment method">{Object.entries(M).map(([k, [l]]) => <button key={k} className="chip" aria-pressed={method === k} onClick={() => setMethod(k)}>{l}</button>)}</div>
       <div className="card flat stack-s">
-        <div className="between small"><span className="muted">Pay to</span><b style={{ fontWeight: 500 }}>Barak Salam Escrow · Bank Islami</b></div>
-        <div className="between small"><span className="muted">{method === 'raast' ? 'Raast ID' : 'IBAN'}</span><span className="hash" style={{ color: 'var(--text)' }}>{method === 'raast' ? 'barak.escrow@raast' : 'PK89BKIP0000000000000000'}</span></div>
+        <div className="between small"><span className="muted">Pay to</span><b style={{ fontWeight: 500 }}>Barak Salam escrow · Bank Alfalah Islamic</b></div>
+        <div className="between small"><span className="muted">IBAN</span><span className="hash" style={{ color: 'var(--text)' }}>PK00 ALFH 0000 0000 0000 0001</span></div>
         <div className="between small"><span className="muted">Reference (must match)</span><b style={{ fontWeight: 500 }}>{order.pay_ref}</b></div>
         <div className="between small"><span className="muted">Amount</span><b style={{ fontWeight: 500 }}>{pkr(order.amount)}</b></div>
         <span className="xs faint">{M[method][1]}</span>

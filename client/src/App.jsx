@@ -68,10 +68,10 @@ function Shell() {
       <div className={'app app-' + app + (app === 'control' ? ' theme-dark' : '')} dir={lang === 'ur' ? 'rtl' : 'ltr'} lang={lang}>
         {app === 'invest' && <InvestBar route={route} user={user} />}
         {app === 'kisan' && <KisanBar route={route} user={user} />}
-        {app === 'invest' && (route === '/' || route.startsWith('/field') || route === '/reserve') && <div className="banner en">Salam offering platform · Preview. Outside funding opens after PVARA approval. Payments, SMS and identity checks run in sandbox mode.{LOCAL ? ' This demo runs in your browser; what you do stays on this device.' : ''}</div>}
+        {app === 'invest' && (route === '/' || route.startsWith('/field') || route === '/reserve') && <div className="banner en">Preview for the PVARA regulatory sandbox. Public investment opens after approval; payments, SMS and identity checks are simulated.</div>}
         {app === 'invest' && route !== '/login' && route !== '/account' && route !== '/inbox' && <Ticker clock={state.clock} />}
         <main style={{ flex: 1 }}>{page}</main>
-        {app !== 'control' && <footer className="foot en" dir="ltr"><div className="wrap between"><span>Barak AgriTech (Pvt) Ltd · Rabi 2026-27 wheat Salam</span><span>1 PAT = 1 kg Grade 1 wheat · Salam price Rs {fmt(state.pricing.price)} / 40 kg</span></div></footer>}
+        {app !== 'control' && <footer className="foot en" dir="ltr"><div className="wrap between"><span>Barak AgriTech (Pvt) Ltd · Rabi 2026-27 wheat Salam</span><span>{app === 'kisan' ? `Salam price Rs ${fmt(state.pricing.price)} a maund` : `1 PAT = 1 kg Grade 1 wheat · Salam price Rs ${fmt(state.pricing.price)} / 40 kg`}</span></div></footer>}
         {app === 'invest' && user && user.role === 'investor' && <BottomNav items={[['/', 'Market', '◫'], ['/portfolio', 'My wheat', '◉'], ['/inbox', 'Inbox', '✉', user.unread], ['/account', 'Account', '☰']]} route={route} />}
         {app === 'kisan' && user && user.role === 'grower' && <BottomNav items={lang === 'ur' ? [['/grower', 'ہوم', '⌂'], ['/grower/field', 'کھیت', '❦'], ['/grower/money', 'رقم', '₨'], ['/grower/help', 'مدد', '✆', user.unread]] : [['/grower', 'Home', '⌂'], ['/grower/field', 'Field', '❦'], ['/grower/money', 'Money', '₨'], ['/grower/help', 'Help', '✆', user.unread]]} route={route} />}
         <Dock />
@@ -140,7 +140,7 @@ function KisanBar({ route, user }) {
 
 function Ticker({ clock }) {
   const p = clock.prices, chg = clock.priceHist.length > 1 ? p.pmex - clock.priceHist[clock.priceHist.length - 2] : 0;
-  const items = [['PMEX', p.pmex, chg], ['Sahiwal mandi', p.sahiwal], ['Okara mandi', p.okara], ['Govt indicative price', p.support]];
+  const items = [['PMEX', p.pmex, chg], ['Sahiwal mandi', p.sahiwal], ['Okara mandi', p.okara], ['Support price', p.support]];
   return (
     <div className="ticker en" dir="ltr">
       <div className="wrap">

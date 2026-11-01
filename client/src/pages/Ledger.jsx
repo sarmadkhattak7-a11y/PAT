@@ -46,9 +46,24 @@ export default function Ledger() {
         </div>
         <div className="card stack-s">
           <h2>Token lifecycle</h2>
-          {[['Minted and locked', 'Only when cash is paid to a verified grower; the amount equals the kg owed. Cannot be transferred.'], ['Backed by the warehouse', 'The warehouse weighs and grades the wheat and issues an electronic receipt. Tokens unlock and can move between KYC-verified holders.'], ['Burned at sale', 'Wheat is sold in April or September; tokens are burned and PKR paid to the holder.'], ['Shortfall', 'If wheat is not delivered after any extension, the grower refunds its price with no profit added; those PAT are cancelled and holders are paid back what they paid.']].map(([t, b], i) => <div key={t} className="card flat"><b style={{ fontWeight: 500 }}>{i + 1}. {t}</b><span className="small muted">{b}</span></div>)}
+          {[['Minted and locked', 'Only when cash is paid to a verified grower; the amount equals the kg owed. Cannot be transferred.'], ['Backed by the warehouse', 'The warehouse weighs and grades the wheat and issues an electronic receipt. Tokens unlock and can move between KYC-verified holders.'], ['Burned at sale', 'Wheat is sold in April or September; tokens are burned and the rupees paid to the holder.'], ['Shortfall', 'If wheat is not delivered after any extension, the grower refunds its price with no profit added; those PAT are cancelled and holders are paid back what they paid.']].map(([t, b], i) => <div key={t} className="card flat"><b style={{ fontWeight: 500 }}>{i + 1}. {t}</b><span className="small muted">{b}</span></div>)}
           {data.supply.length > 1 && <><span className="small muted">Supply outstanding, PAT</span><Spark data={data.supply.map((p) => p.out)} h={60} /></>}
         </div>
+      </section>
+      <section className="card stack-s">
+        <div className="between"><h2>Investor and token controls</h2><span className="small muted">What the PVARA sandbox would supervise</span></div>
+        <div className="scroll-x"><table className="tbl small"><thead><tr><th>Control</th><th>How it works</th><th>In this build</th></tr></thead><tbody>
+          {[['Identity and bank title', 'CNIC checked with NADRA Verisys; payouts only to an account in the investor\'s own name.', 'Simulated'],
+            ['Suitability and limits', 'Three questions set a season limit; no one holds more than 20% of a field.', 'Working'],
+            ['Key facts and consent', 'One-page key facts and three acknowledgements before the first reservation, stored with a date.', 'Working'],
+            ['Cooling-off', 'A paid order can be withdrawn for a full refund until two days before the close.', 'Working'],
+            ['Client money held apart', 'Escrow at the bank, reconciled on the Money desk: deposits, refunds, payments to growers and fees. It returns to zero at season end.', 'Working'],
+            ['Mint only against a paid contract', 'Tokens are minted when the full price reaches a signed grower, one per kg owed.', 'Working'],
+            ['No resale before delivery', 'Tokens stay locked until the warehouse receipt is issued; then they move only between verified holders.', 'Working'],
+            ['Proof of reserve', 'Outstanding tokens against wheat owed under contract or held under warehouse receipts, published weekly.', 'Working'],
+            ['Tamper evidence and audit', 'Every token event is hash-chained and re-verified; every staff and user action is logged with personal data masked.', 'Working'],
+            ['Public anchoring', 'Ledger hashes anchored on Hedera.', 'After approval']].map(([c, h, s]) => <tr key={c}><td style={{ fontWeight: 500 }}>{c}</td><td className="muted">{h}</td><td><Tag k={s === 'Working' ? 'ok' : s === 'Simulated' ? 'info' : 'done'}>{s}</Tag></td></tr>)}
+        </tbody></table></div>
       </section>
       <section className="card stack-s">
         <div className="between"><h2>Pilot contract records · {data.pilot.ref}</h2><span className="small muted">{data.pilot.note}</span></div>

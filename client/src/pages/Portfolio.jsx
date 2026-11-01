@@ -18,6 +18,7 @@ export default function Portfolio() {
   if (data.direct) return <DirectPortfolio p={data.direct} />;
   const v = data.value;
   const got = data.payouts.reduce((s, p) => s + p.net, 0) + data.cash.filter((c) => c.type === 'refund' && /undelivered/.test(c.memo)).reduce((s, c) => s - c.amount, 0);
+  const refunded = data.orders.reduce((s, o) => s + o.lines.reduce((a, l) => a + (l.refund || 0), 0), 0);
   const HEAD = {
     none: ['No wheat yet', 'Pick a pool or a field in the marketplace to start.'],
     reserved: ['Reserved, waiting for payment', 'Pay within 24 hours to keep your place.'],
@@ -45,6 +46,13 @@ export default function Portfolio() {
               <span className="xs faint">Under Salam the full price is paid when the contract is made, so nothing is released to a grower who has not signed.</span>
             </div>
           )}
+          {data.stage !== 'signing' && data.updates.length > 0 && (
+            <div className="card stack-s">
+              <div className="between"><span className="kicker">Latest update</span><span className="xs faint">{data.updates[0].date}</span></div>
+              <b style={{ fontWeight: 500 }}>{data.updates[0].t}</b>
+              <span className="small muted">{data.updates[0].b}</span>
+            </div>
+          )}
         </div>
         <div className="card lift pad-l">
           {v ? (
@@ -53,11 +61,11 @@ export default function Portfolio() {
               {data.stage === 'paidout' ? (
                 <><div className="huge">{pkr(got)}</div><div className="small muted">net, from {pkr(v.cost)} put in · <span className={got >= v.cost ? 'up' : 'down'}>{pct(got / v.cost - 1)}</span></div></>
               ) : (
-                <><div className="huge">{pkr(v.markNow)}</div><div className="small muted">{fmt(v.pat)} PAT ({(v.pat / 40).toFixed(1)} maund) at today's PMEX Rs {fmt(v.price)}, after fee and storage · <span className={v.retNow >= 0 ? 'up' : 'down'}>{pct(v.retNow)}</span> on {pkr(v.cost)}</div></>
+                <><div className="huge">{pkr(v.markNow)}</div><div className="small muted">{fmt(v.pat)} PAT ({(v.pat / 40).toFixed(1)} maund) at today's PMEX Rs {fmt(v.price)}, after fee and storage · <span className={v.retNow >= 0 ? 'up' : 'down'}>{pct(v.retNow)}</span> on {pkr(v.cost)}{refunded > 0 ? ` (${rs(refunded)} refunded from a field that did not go ahead)` : ''}</div></>
               )}
               {data.stage !== 'paidout' && <><hr className="rule" />
-                <table className="tbl small"><tbody>{v.scenarios.map((s) => <tr key={s.label}><td>{s.label}</td><td className="r muted">Rs {fmt(s.px)}</td><td className="r">{pkr(s.value)}</td><td className={'r ' + (s.ret >= 0 ? 'up' : 'down')}>{pct(s.ret)}</td></tr>)}</tbody></table>
-                <span className="xs faint">Break-even Rs {fmt(v.breakeven)} per 40 kg. Before withholding tax.</span></>}
+                <table className="tbl small"><tbody>{v.scenarios.map((s) => <tr key={s.label}><td>{s.label}</td><td className="r muted" style={{ whiteSpace: 'nowrap' }}>Rs {fmt(s.px)}</td><td className="r" style={{ whiteSpace: 'nowrap' }}>{pkr(s.value)}</td><td className={'r ' + (s.ret >= 0 ? 'up' : 'down')}>{pct(s.ret)}</td></tr>)}</tbody></table>
+                <span className="xs faint">If held to September and sold at each price: after the 3.5% sale fee and storage, before withholding tax. Break-even Rs {fmt(v.breakeven)} per 40 kg.</span></>}
             </>
           ) : data.waiting ? (
             <><div className="kicker">In escrow</div><div className="huge">{pkr(data.waiting)}</div><div className="small muted">becomes about {fmt(Math.floor(data.waiting / pricing.kgCost))} PAT if every field goes ahead</div></>
@@ -99,7 +107,7 @@ export default function Portfolio() {
         <div className="card stack-s">
           <h2>Orders and documents</h2>
           {!data.orders.length && <p className="muted small">None yet.</p>}
-          {data.orders.map((o) => <OrderRow key={o.id} o={o} />)}
+          {data.orders.map((o) => <OrderRow key={o.id} o={o} sold={data.stage === 'paidout'} />)}
         </div>
         <div className="stack">
           {data.zakat && (
@@ -125,13 +133,14 @@ export default function Portfolio() {
   );
 }
 
-function OrderRow({ o }) {
+const METHOD = { raast: 'Raast', ibft: 'bank transfer', card: 'debit card' };
+function OrderRow({ o, sold }) {
   const a = useAction(); const { clock } = useApp();
-  const [k, l] = ORDER[o.status] || ['info', o.status];
+  const [k, l] = sold && o.status === 'tokens' ? ['done', 'Sold · paid out'] : ORDER[o.status] || ['info', o.status];
   return (
     <div className="stack-s" style={{ borderBottom: '1px solid var(--divider)', paddingBottom: 10 }}>
       <div className="between"><b style={{ fontWeight: 500 }}>{o.kind === 'pool' ? (o.pool === 'core' ? 'Large farms pool' : 'Starter pool') : o.lines[0] && o.lines[0].grower} · {pkr(o.amount)}</b><Tag k={k}>{l}</Tag></div>
-      <span className="xs faint">{o.id} · reserved {o.reservedDate}{o.paidDate ? ' · paid ' + o.paidDate + ' by ' + o.method : ''} · {o.lines.length} field{o.lines.length > 1 ? 's' : ''}</span>
+      <span className="xs faint">{o.id} · reserved {o.reservedDate}{o.paidDate ? ' · paid ' + o.paidDate + ' by ' + (METHOD[o.method] || o.method) : ''} · {o.lines.length} field{o.lines.length > 1 ? 's' : ''}</span>
       <div className="row" style={{ gap: 8 }}>
         {['paid', 'allotted', 'tokens', 'refunded'].includes(o.status) && <Link to={'/doc/' + o.id} className="small">Purchase note and Salam terms →</Link>}
         {o.withdrawable && <button className="btn small" disabled={a.busy} onClick={() => a.run(() => api(`/api/orders/${o.id}/withdraw`, {}), 'Withdrawn. Full refund on its way.')}>Withdraw (until {clock.dates.withdrawBy})</button>}
@@ -167,7 +176,7 @@ function PayNow({ o }) {
   return (
     <div className="card" style={{ boxShadow: '0 0 0 2px var(--watch-fg)' }}>
       <div className="between"><b style={{ fontWeight: 500 }}>{pkr(o.amount)} reserved · pay by {o.expires}</b><Tag k="watch">Unpaid</Tag></div>
-      <span className="small muted">Reference {o.pay_ref} · Raast ID barak.escrow@raast</span>
+      <span className="small muted">Reference {o.pay_ref} · escrow IBAN PK00 ALFH 0000 0000 0000 0001</span>
       <div className="sandbox">Sandbox: the button stands in for the bank's payment confirmation.</div>
       <Err e={a.error} />
       <div className="row"><button className="btn primary" disabled={a.busy} onClick={() => a.run(() => api(`/api/orders/${o.id}/pay`, { method: 'raast' }), 'Payment received')}>Simulate bank confirmation</button>

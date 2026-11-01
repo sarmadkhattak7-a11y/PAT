@@ -38,7 +38,7 @@ export default function Login() {
       <div className="card lift pad-l" style={{ maxWidth: 460, margin: '0 auto' }}>
         <LoginForm onDone={(u) => go(u.role === 'ops' ? '/ops' : u.role === 'grower' ? '/grower' : next === '/login' ? '/' : next)} />
         <hr className="rule" />
-        <p className="small muted">Demo accounts: Ops <b>0300 0000001</b>, growers <b>0301 1000141</b> to <b>0301 1000152</b>. Any other number creates a new investor account.</p>
+        <p className="small muted">Sandbox accounts: Ops <b>0300 0000001</b>, growers <b>0301 1000141</b> to <b>0301 1000152</b>. Any other number creates a new investor account.</p>
       </div>
     </div>
   );

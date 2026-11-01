@@ -341,7 +341,7 @@ export function recordDelivery(fieldId, kg, moisture, grade, extra = {}) {
     } else {
       run("UPDATE fields SET status = 'short', shortfall_kg = ? WHERE id = ?", owed - total, fieldId);
       notify(f.grower_id, d, 'delivery', ['Part delivered', `Receipt ${ewr}: ${accepted.toLocaleString('en-IN')} kg. ${(owed - total).toLocaleString('en-IN')} kg still due. You may deliver wheat of the same grade from another source.`], ['جزوی ترسیل', `رسید ${ewr}: ${accepted.toLocaleString('en-IN')} کلو۔ ${(owed - total).toLocaleString('en-IN')} کلو باقی ہے۔ آپ کسی دوسرے ذریعے سے اسی معیار کی گندم دے سکتے ہیں۔`]);
-      holdersOf(fieldId).forEach((h) => notify(h.user_id, d, 'token', [`${f.grower} delivered part of the wheat`, `${(owed - total).toLocaleString('en-IN')} kg is still due. Barak, as your agent, will extend the delivery or recover the price for the missing wheat with no profit added.`]));
+      holdersOf(fieldId).forEach((h) => notify(h.user_id, d, 'token', [`${f.grower} delivered part of the wheat`, `${Math.round((owed - total) / owed * 100)}% of this field's wheat is still due, so part of your ${h.pat.toLocaleString('en-IN')} PAT. Barak, as your agent, will extend the delivery or recover the price for the missing wheat with no profit added.`]));
     }
     return { ewr, accepted, total, owed };
   });

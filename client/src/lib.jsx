@@ -45,8 +45,8 @@ export function useData(url) {
 
 // ── formatting ──
 export const fmt = (x, d = 0) => (x == null || isNaN(x) ? '–' : Number(x).toLocaleString('en-IN', { maximumFractionDigits: d, minimumFractionDigits: d }));
-export const rs = (x) => 'Rs ' + fmt(Math.round(x));
-export const pkr = (x) => 'PKR ' + fmt(Math.round(x));
+export const rs = (x) => 'Rs ' + fmt(Math.round(x) || 0);
+export const pkr = rs;
 export const pct = (x, d = 1) => (x >= 0 ? '+' : '−') + Math.abs(x * 100).toFixed(d) + '%';
 export const lakh = (x) => (x >= 1e7 ? 'Rs ' + (x / 1e7).toFixed(2) + ' crore' : x >= 1e5 ? 'Rs ' + (x / 1e5).toFixed(x % 1e5 ? 1 : 0) + ' lakh' : rs(x));
 export const phOf = (n) => asset(`img/field${((n - 1) % 5) + 1}.jpg`);

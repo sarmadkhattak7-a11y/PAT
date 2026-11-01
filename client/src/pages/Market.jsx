@@ -64,7 +64,7 @@ export default function Market() {
           <details className="small">
             <summary style={{ cursor: 'pointer', color: 'var(--accent)' }}>What if prices move?</summary>
             <table className="tbl" style={{ marginTop: 8 }}><tbody>
-              {P.scenarios.map((s) => <tr key={s.label}><td>{s.label}</td><td className="r muted">Rs {fmt(s.px)}</td><td className="r">{pkr(val(s.px))}</td><td className={'r ' + (s.ret >= 0 ? 'up' : 'down')}>{pct(val(s.px) / amount - 1)}</td></tr>)}
+              {P.scenarios.map((s) => <tr key={s.label}><td>{s.label}</td><td className="r muted" style={{ whiteSpace: 'nowrap' }}>Rs {fmt(s.px)}</td><td className="r" style={{ whiteSpace: 'nowrap' }}>{pkr(val(s.px))}</td><td className={'r ' + (s.ret >= 0 ? 'up' : 'down')}>{pct(val(s.px) / amount - 1)}</td></tr>)}
             </tbody></table>
             <p className="muted xs" style={{ marginTop: 6 }}>After the 3.5% sale fee and Rs {P.carry} per maund storage, before withholding tax. Break-even: Rs {fmt(P.breakeven)} per 40 kg.</p>
           </details>
@@ -83,7 +83,7 @@ export default function Market() {
           {data.pools.map((p) => (
             <div key={p.key} className="card">
               <div className="between"><h3>{p.name}</h3><span className="small muted">{p.fields.length} fields · {p.villages} villages · {fmt(p.acres)} acres</span></div>
-              <span className="small muted">{p.blurb}. Grade A only, verified by Barak Crop Monitoring.</span>
+              <span className="small muted">{p.blurb}. A-rated fields only, monitored by Barak Crop Monitoring.</span>
               <div className="between small"><span>Room for you</span><b style={{ fontWeight: 500 }}>{rs(p.room)}</b></div>
               {open && <button className="btn" onClick={() => go(`/reserve?kind=pool&pool=${p.key}&amount=${Math.max(25000, Math.min(amount, Math.floor(p.room)))}`)}>Reserve in this pool</button>}
             </div>
@@ -93,7 +93,7 @@ export default function Market() {
 
       <section className="stack">
         <div className="between">
-          <h2>Fields {open ? 'raising now' : 'this season'}<span className="small muted" style={{ display: 'block', fontWeight: 400 }}>Every field is Grade A and checked by Barak Crop Monitoring</span></h2>
+          <h2>Fields {open ? 'raising now' : 'this season'}<span className="small muted" style={{ display: 'block', fontWeight: 400 }}>Every field is A-rated and monitored by Barak Crop Monitoring</span></h2>
           <div className="row" style={{ gap: 8 }}>
             <div className="chips" role="group" aria-label="District">{['all', 'Sahiwal', 'Okara'].map((f) => <button key={f} className="chip" aria-pressed={filter === f} onClick={() => setFilter(f)}>{f === 'all' ? 'All' : f}</button>)}</div>
             <select className="inp" style={{ width: 'auto' }} value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort fields"><option value="room">Most room</option><option value="funded">Most funded</option><option value="acres">Largest</option></select>
@@ -123,7 +123,7 @@ export default function Market() {
             ['If wheat is short', 'The grower delivers later (up to 30 days) or refunds the price of the missing part, with no profit added. Late amounts go to charity.'],
             ['Your money, held apart', 'Payments sit in a client account at the bank. Barak cannot spend them; they leave only to a signed, paid grower or back to you.']].map(([t, b]) => <div key={t} className="card flat"><b style={{ fontWeight: 500 }}>{t}</b><span className="small muted">{b}</span></div>)}
         </div>
-        <span className="xs faint">Contracts drafted for review by Barak's lawyer and Shariah advisor [to be appointed]. Field monitoring with LIMS. PVARA regulatory sandbox application in preparation.</span>
+        <span className="xs faint">Contracts drafted for review by Barak's legal counsel and an independent Shariah advisor. Field monitoring by LIMS. Prepared for the PVARA regulatory sandbox.</span>
       </section>
 
       <PriceRule P={P} />
@@ -138,7 +138,7 @@ function FieldCard({ l, open }) {
       <div className="ph"><img src={phOf(l.photo)} alt="" loading="lazy" /><span className="illus">Illustrative image · not this field</span></div>
       <div className="body">
         <div className="between"><b style={{ fontSize: 17, fontWeight: 500 }}>{l.grower}</b>{!open && statusTag(l.status)}</div>
-        <span className="small muted">{l.village} · {l.acres} acres · Grade {l.grade} · {l.water}</span>
+        <span className="small muted">{l.village} · {l.acres} acres · Rated {l.grade} · {l.water}</span>
         <FundBar paid={l.paidFrac} res={l.resFrac} mine={(l.mine || l.mineKept) / l.target} />
         <div className="between small muted"><span>{Math.round(l.paidFrac * 100)}% paid</span><span>{open ? (l.room > 0 ? rs(l.room) + ' left' : 'Full') : fmt(l.acresContracted * 800) + ' kg contract'}</span></div>
       </div>
@@ -168,13 +168,13 @@ function PriceRule({ P }) {
   return (
     <section className="card stack">
       <h2>How the price is set</h2>
-      <p className="muted">Growers are paid Rs {fmt(P.price)} per 40 kg for this season, fixed when the offer went out and written into the contracts. Investors pay Rs {fmt(P.cost, 1)} including Barak's 2.5% fee. Each season the price comes from one published rule; at today's market inputs the rule gives Rs {fmt(P.rulePrice)}, so the fixed price sits below it and leaves investors more room.</p>
+      <p className="muted">Growers are paid Rs {fmt(P.price)} per 40 kg for this season, fixed when the offer went out and written into the contracts. Investors pay Rs {P.cost.toFixed(2)} including Barak's 2.5% fee. Each season the price comes from one published rule; at today's market inputs the rule gives Rs {fmt(P.rulePrice)}, so the fixed price sits below it and leaves investors more room.</p>
       <div className="grid g3">
         <div className="card flat"><span className="small muted">Hurdle = SBP rate × tenor + season risk premium</span><b style={{ fontWeight: 500 }}>{(P.rf * 100).toFixed(1)}% × {P.tenor} + {(P.premium * 100).toFixed(1)}% = {(P.hurdle * 100).toFixed(1)}%</b></div>
         <div className="card flat"><span className="small muted">Rule price = (September estimate × (1 − fee) − storage) ÷ (1 + hurdle)</span><b style={{ fontWeight: 500 }}>({fmt(P.ref)} × 0.965 − {P.carry}) ÷ {(1 + P.hurdle).toFixed(4)} = {fmt(P.raw, 0)} → Rs {fmt(P.rulePrice)}</b><span className="xs faint">September estimate: PAT Pricing Engine median, 31 Oct 2026</span></div>
         <div className="card flat"><span className="small muted">Checks on the Rs {fmt(P.price)} price</span>
           <span className="small">{P.checks.discount ? '✓' : '✗'} Grower price {Math.round(P.discount * 100)}% under the Rs {fmt(P.support)} support price (limit 30%)</span>
-          <span className="small">{P.checks.stress ? '✓' : '✗'} Investor result in a 2024-style crash {Math.round(P.stressRet * 100)}% (limit −15%)</span>
+          <span className="small">{P.checks.stress ? '✓' : <b style={{ color: 'var(--watch-fg)', fontWeight: 600 }}>!</b>} In a 2024-style crash investors would lose about {Math.abs(Math.round(P.stressRet * 100))}%{P.checks.stress ? ', inside our 15% limit' : ', more than our 15% limit. Disclosed in the key facts'}.</span>
           <span className="small">{P.checks.advance ? '✓' : '✗'} Advance {rs(P.advance)} an acre covers the cost of production (Rs {fmt(P.costLow)})</span></div>
       </div>
     </section>
@@ -199,7 +199,7 @@ export function FieldPage({ id }) {
         <div className="stack">
           <div className="hero-img" style={{ height: 280 }}><img src={phOf(l.photo)} alt="" /><span className="illus">Illustrative image · not this field</span></div>
           <div className="between"><h1>{l.grower}</h1>{statusTag(l.status)}</div>
-          <p className="muted">{l.id} · {l.village} · {l.acres} acres listed · Grade {l.grade} · {l.water}</p>
+          <p className="muted">{l.id} · {l.village} · {l.acres} acres listed · Rated {l.grade} · {l.water}</p>
           <div className="grid g4">
             <Stat v={fmt(l.acres * 20) + ' md'} l="wheat owed if fully funded" sub={fmt(l.acres * 800) + ' kg · ' + fmt(l.acres * 800) + ' PAT'} />
             <Stat v={l.history.join(' · ')} l="past 3 yields, md/acre" />
@@ -210,7 +210,7 @@ export function FieldPage({ id }) {
             <div className="card"><div className="between"><h3>Crop health (NDVI), weekly from satellite</h3><span className="small muted">{c.stage ? '' : ''}{c.ndvi}</span></div><Spark data={series} min={0.1} max={0.85} h={80} /></div>
           )}
           <div className="card flat small">
-            <b style={{ fontWeight: 500 }}>Why this field is Grade A</b>
+            <b style={{ fontWeight: 500 }}>Why this field is rated A</b>
             <span className="muted">Past yields average {(l.history.reduce((a, b) => a + b, 0) / 3).toFixed(1)} md/acre against 20 owed ({(l.history.reduce((a, b) => a + b, 0) / 60).toFixed(2)}× coverage), reliable {l.water.toLowerCase()} water, and a clean delivery record. Every grade pays the same price.</span>
           </div>
         </div>
