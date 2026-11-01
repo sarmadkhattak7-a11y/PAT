@@ -31,8 +31,11 @@ P.D = D;
 P.dates = Object.fromEntries(Object.entries(D).map(([k, v]) => [k, dateOf(v)]));
 
 // 400 acres as eight 50-acre blocks until Schedule 2 (khasra numbers) is filled in.
-// Offsets put the average near 32 maunds an acre (about 1.6x cover), as the Forward Purchase Proposal assumes.
-export const BLOCKS = [-3, -4, -5, -6.7, -3.5, -4.5, -5.5, -3.7].map((off, i) => ({
+// Wattoo expects about 50 maunds an acre (well above the Punjab average of about 30), so the 8,000 maunds owed
+// (20 an acre) are covered about 2.5 times. LIFT raises the district crop model to that level; the offsets are
+// block-to-block variation, kept small so crop health (NDVI) stays realistic.
+const LIFT = 14.6;
+export const BLOCKS = [0.6, -0.4, 1.0, -0.9, 0.8, -0.3, 0.3, -0.6].map((off, i) => ({
   id: 'Block ' + 'ABCDEFGH'[i], acres: 50, sown: D.sowFrom + Math.round(i * 1.8), harvest_week: 23.5 + (i % 3) * 0.3,
   yield_offset: off, crop_event: i === 3 ? 'rust' : null,
   geo: [80 + (i % 4) * 120, 110 + Math.floor(i / 4) * 150, 100, 110, (i % 2 ? 4 : -5)],
@@ -47,7 +50,7 @@ function blockCrop(b, d) {
   const c = cropAt({ yield_offset: b.yield_offset, crop_event: null, harvest_week: b.harvest_week }, d);
   // Block D: yellow rust found on scouting in February, sprayed within 3 days; a small yield cost remains.
   const rust = b.crop_event === 'rust' && d >= 100 ? (d >= 104 ? 0.8 : 2.5) : 0;
-  return { ...c, perAc: c.perAc - rust, perAcLo: c.perAcLo - rust, perAcHi: c.perAcHi - rust, ndvi: c.ndvi != null && b.crop_event === 'rust' && d >= 96 && d < 112 ? +(c.ndvi - 0.05).toFixed(2) : c.ndvi };
+  return { ...c, perAc: c.perAc + LIFT - rust, perAcLo: c.perAcLo + LIFT - rust, perAcHi: c.perAcHi + LIFT - rust, ndvi: c.ndvi != null && b.crop_event === 'rust' && d >= 96 && d < 112 ? +(c.ndvi - 0.05).toFixed(2) : c.ndvi };
 }
 
 export function lotsUpTo(d) {

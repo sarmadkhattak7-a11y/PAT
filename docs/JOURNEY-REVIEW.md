@@ -57,7 +57,7 @@ Run as a **Barak Direct** contract, a second channel next to the retail marketpl
 - Interactive along the way: Asim confirms receipt, offers surplus and confirms Rabi 2027-28 interest. Ops buys or passes the surplus. Kashif gives tokenisation consent (Wakalah 9.2) and pilot feedback.
 - No tokens are issued (physical Salam until PVARA approval); milestones are hash-chained records in Control. A token simulation replays the contract as PAT (320,000 minted to the buyer's custodial wallet at signing, locked, retired lot by lot as wheat is sold to the mill), clearly labelled as not issued, for Kashif and in Control.
 
-Yields are simulated around 32 maunds an acre to match the proposal's 1.6× cover. Block names, vehicle numbers and lot details are illustrative until real Schedule 2 and Schedule 4 data exist.
+Yields are simulated around 50 maunds an acre, Wattoo's own expectation (about 2.5× cover on the 20 maunds an acre owed, leaving about 12,000 maunds of surplus). Block names, vehicle numbers and lot details are illustrative until real Schedule 2 and Schedule 4 data exist.
 
 ## 5. Still to do before real money
 
