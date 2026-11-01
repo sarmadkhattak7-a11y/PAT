@@ -71,7 +71,7 @@ function Shell() {
         {app === 'invest' && (route === '/' || route.startsWith('/field') || route === '/reserve') && <div className="banner en">Salam offering platform · Preview. Outside funding opens after PVARA approval. Payments, SMS and identity checks run in sandbox mode.{LOCAL ? ' This demo runs in your browser; what you do stays on this device.' : ''}</div>}
         {app === 'invest' && route !== '/login' && route !== '/account' && route !== '/inbox' && <Ticker clock={state.clock} />}
         <main style={{ flex: 1 }}>{page}</main>
-        {app !== 'control' && <footer className="foot en" dir="ltr"><div className="wrap between"><span>Barak AgriTech (Pvt) Ltd · Rabi 2026-27 wheat Salam · working prototype</span><span>1 PAT = 1 kg Grade 1 wheat · Salam price Rs {fmt(state.pricing.price)} / 40 kg</span></div></footer>}
+        {app !== 'control' && <footer className="foot en" dir="ltr"><div className="wrap between"><span>Barak AgriTech (Pvt) Ltd · Rabi 2026-27 wheat Salam</span><span>1 PAT = 1 kg Grade 1 wheat · Salam price Rs {fmt(state.pricing.price)} / 40 kg</span></div></footer>}
         {app === 'invest' && user && user.role === 'investor' && <BottomNav items={[['/', 'Market', '◫'], ['/portfolio', 'My wheat', '◉'], ['/inbox', 'Inbox', '✉', user.unread], ['/account', 'Account', '☰']]} route={route} />}
         {app === 'kisan' && user && user.role === 'grower' && <BottomNav items={lang === 'ur' ? [['/grower', 'ہوم', '⌂'], ['/grower/field', 'کھیت', '❦'], ['/grower/money', 'رقم', '₨'], ['/grower/help', 'مدد', '✆', user.unread]] : [['/grower', 'Home', '⌂'], ['/grower/field', 'Field', '❦'], ['/grower/money', 'Money', '₨'], ['/grower/help', 'Help', '✆', user.unread]]} route={route} />}
         <Dock />
